@@ -13,10 +13,9 @@ jobs:
         with:
           flutter-version: '3.22.0'
       
-      # Wannan shine maganin error din
       - name: Create Android Project
         run: |
-          flutter create --platforms=android .
+          flutter create --project-name kittys_cozy_merge --platforms=android .
           flutter pub get
       
       - name: Build APK
