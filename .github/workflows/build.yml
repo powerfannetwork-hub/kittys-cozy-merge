@@ -12,8 +12,16 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.22.0'
-      - run: flutter pub get
-      - run: flutter build apk --release
+      
+      # Wannan shine maganin error din
+      - name: Create Android Project
+        run: |
+          flutter create --platforms=android .
+          flutter pub get
+      
+      - name: Build APK
+        run: flutter build apk --release
+      
       - uses: actions/upload-artifact@v4
         with:
           name: kittys-cozy-merge-apk
