@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../models/gem_tile.dart';
 import '../../services/board_service.dart';
+import '../../services/lives_service.dart';
 import 'lose_screen.dart';
 import 'win_screen.dart';
 
@@ -18,14 +19,18 @@ class GameScreen extends StatefulWidget {
       _GameScreenState();
 }
 
-class _GameScreenState
-    extends State<GameScreen> {
+class _GameScreenState extends State<GameScreen> {
   late List<List<GemTile>> board;
 
   GemTile? selectedTile;
 
   int score = 0;
   int moves = 30;
+  int lives = 5;
+
+  bool loading = true;
+  bool canPlay = false;
+  bool unlimitedLives = false;
 
   int get targetScore {
     return 500 + ((widget.level - 1) * 50);
@@ -34,32 +39,45 @@ class _GameScreenState
   @override
   void initState() {
     super.initState();
-    board = BoardService.createBoard();
+    _prepareGame();
   }
 
-  String _getGemEmoji(GemTile tile) {
-    switch (tile.type.name) {
-      case 'ruby':
-        return '🔴';
+  Future<void> _prepareGame() async {
+    final currentLives =
+        await LivesService.refreshLives();
 
-      case 'sapphire':
-        return '🔵';
+    final unlimited =
+        await LivesService.isUnlimitedLives();
 
-      case 'emerald':
-        return '🟢';
+    if (!mounted) return;
 
-      case 'topaz':
-        return '🟡';
+    setState(() {
+      lives = currentLives;
+      unlimitedLives = unlimited;
+    });
 
-      case 'amethyst':
-        return '🟣';
+    final allowed =
+        await LivesService.useLife();
 
-      case 'diamond':
-        return '💎';
+    if (!mounted) return;
 
-      default:
-        return '🔴';
+    if (!allowed) {
+      setState(() {
+        loading = false;
+        canPlay = false;
+      });
+      return;
     }
+
+    setState(() {
+      lives = unlimited
+          ? currentLives
+          : currentLives - 1;
+
+      loading = false;
+      canPlay = true;
+      board = BoardService.createBoard();
+    });
   }
 
   void _checkGameState() {
@@ -93,7 +111,7 @@ class _GameScreenState
     int row,
     int column,
   ) {
-    if (moves <= 0) return;
+    if (!canPlay || moves <= 0) return;
 
     final tappedTile = board[row][column];
 
@@ -149,64 +167,181 @@ class _GameScreenState
     return selectedTile == tile;
   }
 
+  String _formatLives() {
+    if (unlimitedLives) {
+      return '∞';
+    }
+
+    return '$lives/5';
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (loading) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    if (!canPlay) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(
+            'Level ${widget.level}',
+          ),
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment:
+                  MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.favorite,
+                  color: Colors.red,
+                  size: 70,
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  'No Lives Left',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                const Text(
+                  'You need a ❤️ to play this level.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 30),
+                ElevatedButton(
+                  onPressed: () async {
+                    await LivesService.addLife();
+
+                    final updatedLives =
+                        await LivesService.refreshLives();
+
+                    final unlimited =
+                        await LivesService
+                            .isUnlimitedLives();
+
+                    if (!mounted) return;
+
+                    if (updatedLives > 0 ||
+                        unlimited) {
+                      setState(() {
+                        lives = updatedLives;
+                        unlimitedLives = unlimited;
+                        loading = true;
+                      });
+
+                      _prepareGame();
+                    }
+                  },
+                  child: const Text(
+                    'GET 1 ❤️',
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  child: const Text(
+                    'BACK',
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
           'Level ${widget.level}',
         ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(
+              right: 16,
+            ),
+            child: Center(
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.favorite,
+                    color: Colors.red,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    _formatLives(),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
       body: Column(
         children: [
           Container(
-            padding:
-                const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(16),
             child: Column(
               children: [
                 Row(
                   mainAxisAlignment:
-                      MainAxisAlignment
-                          .spaceBetween,
+                      MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
                       'Score: $score',
-                      style:
-                          const TextStyle(
+                      style: const TextStyle(
                         fontSize: 18,
-                        fontWeight:
-                            FontWeight.bold,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                     Text(
                       'Moves: $moves',
-                      style:
-                          const TextStyle(
+                      style: const TextStyle(
                         fontSize: 18,
-                        fontWeight:
-                            FontWeight.bold,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ],
                 ),
+
                 const SizedBox(height: 10),
+
                 LinearProgressIndicator(
-                  value: score /
-                      targetScore,
+                  value: (score / targetScore)
+                      .clamp(0.0, 1.0),
                 ),
+
                 const SizedBox(height: 6),
+
                 Text(
                   'Target: $targetScore',
                 ),
               ],
             ),
           ),
+
           Expanded(
             child: Padding(
-              padding:
-                  const EdgeInsets.all(
-                12,
-              ),
+              padding: const EdgeInsets.all(12),
               child: GridView.builder(
                 itemCount: 64,
                 gridDelegate:
@@ -215,13 +350,12 @@ class _GameScreenState
                   crossAxisSpacing: 4,
                   mainAxisSpacing: 4,
                 ),
-                itemBuilder:
-                    (context, index) {
-                  final row =
-                      index ~/ 8;
-
-                  final col =
-                      index % 8;
+                itemBuilder: (
+                  context,
+                  index,
+                ) {
+                  final row = index ~/ 8;
+                  final col = index % 8;
 
                   final tile =
                       board[row][col];
@@ -230,29 +364,23 @@ class _GameScreenState
                       _isSelected(tile);
 
                   return GestureDetector(
-                    onTap: () =>
-                        _handleTap(
+                    onTap: () => _handleTap(
                       row,
                       col,
                     ),
-                    child:
-                        AnimatedContainer(
+                    child: AnimatedContainer(
                       duration:
                           const Duration(
-                        milliseconds:
-                            150,
+                        milliseconds: 150,
                       ),
-                      decoration:
-                          BoxDecoration(
+                      decoration: BoxDecoration(
                         color: selected
                             ? Colors.amber
                             : Colors.white,
-                        border:
-                            Border.all(
+                        border: Border.all(
                           color: selected
                               ? Colors.orange
-                              : Colors
-                                  .transparent,
+                              : Colors.transparent,
                           width: 3,
                         ),
                         borderRadius:
@@ -262,11 +390,10 @@ class _GameScreenState
                       ),
                       child: Center(
                         child: Text(
-                          _getGemEmoji(tile),
+                          tile.type.emoji,
                           style:
                               const TextStyle(
-                            fontSize:
-                                26,
+                            fontSize: 26,
                           ),
                         ),
                       ),
