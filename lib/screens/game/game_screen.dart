@@ -149,7 +149,7 @@ class _GameScreenState extends State<GameScreen> {
     final tappedTile =
         board[row][column];
 
-    // Ice/obstacle cannot be selected.
+    // Ice cannot be selected.
     if (tappedTile.isObstacle) {
       setState(() {
         selectedTile = null;
@@ -231,19 +231,14 @@ class _GameScreenState extends State<GameScreen> {
     switch (type) {
       case GemType.ruby:
         return '🔴';
-
       case GemType.sapphire:
         return '🔵';
-
       case GemType.emerald:
         return '🟢';
-
       case GemType.topaz:
         return '🟡';
-
       case GemType.amethyst:
         return '🟣';
-
       case GemType.diamond:
         return '💎';
     }
@@ -257,48 +252,81 @@ class _GameScreenState extends State<GameScreen> {
     return '$lives/5';
   }
 
-  Widget _buildTile(
+  Widget _buildIceTile(
+    GemTile tile,
+  ) {
+    final hp = tile.iceHp;
+
+    return AnimatedContainer(
+      duration: const Duration(
+        milliseconds: 250,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.lightBlue.shade100,
+        borderRadius:
+            BorderRadius.circular(12),
+        border: Border.all(
+          color: hp <= 1
+              ? Colors.blue.shade700
+              : Colors.lightBlue.shade300,
+          width: 2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.blue
+                .withOpacity(0.25),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          const Text(
+            '🧊',
+            style: TextStyle(
+              fontSize: 27,
+            ),
+          ),
+
+          // Ice HP number.
+          Positioned(
+            right: 3,
+            top: 3,
+            child: Container(
+              width: 20,
+              height: 20,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: Colors.blue.shade700,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.white,
+                  width: 1.5,
+                ),
+              ),
+              child: Text(
+                '$hp',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNormalTile(
     GemTile tile,
     bool selected,
   ) {
-    if (tile.isObstacle) {
-      return AnimatedContainer(
-        duration:
-            const Duration(
-          milliseconds: 150,
-        ),
-        decoration: BoxDecoration(
-          color: Colors.lightBlue.shade100,
-          borderRadius:
-              BorderRadius.circular(12),
-          border: Border.all(
-            color: Colors.lightBlue.shade300,
-            width: 2,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.blue
-                  .withOpacity(0.20),
-              blurRadius: 5,
-              offset:
-                  const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: const Center(
-          child: Text(
-            '🧊',
-            style: TextStyle(
-              fontSize: 25,
-            ),
-          ),
-        ),
-      );
-    }
-
     return AnimatedContainer(
-      duration:
-          const Duration(
+      duration: const Duration(
         milliseconds: 150,
       ),
       decoration: BoxDecoration(
@@ -318,8 +346,7 @@ class _GameScreenState extends State<GameScreen> {
             color: Colors.black
                 .withOpacity(0.04),
             blurRadius: 3,
-            offset:
-                const Offset(0, 1),
+            offset: const Offset(0, 1),
           ),
         ],
       ),
@@ -328,12 +355,25 @@ class _GameScreenState extends State<GameScreen> {
           _getGemEmoji(
             tile.type,
           ),
-          style:
-              const TextStyle(
+          style: const TextStyle(
             fontSize: 26,
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildTile(
+    GemTile tile,
+    bool selected,
+  ) {
+    if (tile.isObstacle) {
+      return _buildIceTile(tile);
+    }
+
+    return _buildNormalTile(
+      tile,
+      selected,
     );
   }
 
@@ -382,8 +422,7 @@ class _GameScreenState extends State<GameScreen> {
                   const SizedBox(width: 4),
                   Text(
                     _formatLives(),
-                    style:
-                        const TextStyle(
+                    style: const TextStyle(
                       fontWeight:
                           FontWeight.bold,
                     ),
@@ -449,16 +488,15 @@ class _GameScreenState extends State<GameScreen> {
                     Text(
                       'Target: $targetScore',
                     ),
+
                     if (hasIce) ...[
                       const SizedBox(
                         width: 10,
                       ),
                       const Text(
                         '•',
-                        style:
-                            TextStyle(
-                          color:
-                              Colors.grey,
+                        style: TextStyle(
+                          color: Colors.grey,
                         ),
                       ),
                       const SizedBox(
@@ -466,8 +504,7 @@ class _GameScreenState extends State<GameScreen> {
                       ),
                       const Text(
                         '🧊 Ice',
-                        style:
-                            TextStyle(
+                        style: TextStyle(
                           fontWeight:
                               FontWeight.bold,
                           color:
