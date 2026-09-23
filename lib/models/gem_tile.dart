@@ -9,13 +9,18 @@ class GemTile {
   bool isMatched;
   bool isObstacle;
 
+  int iceHp;
+
   GemTile({
     required this.row,
     required this.column,
     required this.type,
     this.isMatched = false,
     this.isObstacle = false,
+    this.iceHp = 0,
   });
+
+  bool get hasIce => iceHp > 0;
 
   GemTile copyWith({
     int? row,
@@ -23,6 +28,7 @@ class GemTile {
     GemType? type,
     bool? isMatched,
     bool? isObstacle,
+    int? iceHp,
   }) {
     return GemTile(
       row: row ?? this.row,
@@ -30,6 +36,7 @@ class GemTile {
       type: type ?? this.type,
       isMatched: isMatched ?? this.isMatched,
       isObstacle: isObstacle ?? this.isObstacle,
+      iceHp: iceHp ?? this.iceHp,
     );
   }
 
@@ -40,6 +47,7 @@ class GemTile {
       'type': type.name,
       'isMatched': isMatched,
       'isObstacle': isObstacle,
+      'iceHp': iceHp,
     };
   }
 
@@ -55,6 +63,7 @@ class GemTile {
       ),
       isMatched: json['isMatched'] ?? false,
       isObstacle: json['isObstacle'] ?? false,
+      iceHp: json['iceHp'] ?? 0,
     );
   }
 }
