@@ -4,7 +4,7 @@ enum GemType {
   nature,
   storm,
   light,
-  void,
+  voidGem,
 }
 
 extension GemTypeExtension on GemType {
@@ -25,7 +25,7 @@ extension GemTypeExtension on GemType {
       case GemType.light:
         return '✨';
 
-      case GemType.void:
+      case GemType.voidGem:
         return '🌌';
     }
   }
@@ -47,13 +47,14 @@ extension GemTypeExtension on GemType {
       case GemType.light:
         return 'Light';
 
-      case GemType.void:
+      case GemType.voidGem:
         return 'Void';
     }
   }
 
   static GemType fromIndex(int index) {
     return GemType.values[
-        index % GemType.values.length];
+      index % GemType.values.length
+    ];
   }
 }
