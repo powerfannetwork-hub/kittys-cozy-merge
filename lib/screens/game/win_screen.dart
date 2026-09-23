@@ -20,9 +20,22 @@ class WinScreen extends StatefulWidget {
 class _WinScreenState extends State<WinScreen> {
   bool _saving = true;
 
+  int get targetScore {
+    return 500 + ((widget.level - 1) * 50);
+  }
+
   int get stars {
-    if (widget.score >= 1500) return 3;
-    if (widget.score >= 1000) return 2;
+    final percentage =
+        widget.score / targetScore;
+
+    if (percentage >= 2.0) {
+      return 3;
+    }
+
+    if (percentage >= 1.5) {
+      return 2;
+    }
+
     return 1;
   }
 
@@ -41,14 +54,16 @@ class _WinScreenState extends State<WinScreen> {
         prefs.getInt('unlocked_level') ?? 1;
 
     // Unlock next level
-    final nextLevel = widget.level + 1;
+    if (widget.level < 500) {
+      final nextLevel =
+          widget.level + 1;
 
-    if (nextLevel > currentUnlocked &&
-        widget.level < 500) {
-      await prefs.setInt(
-        'unlocked_level',
-        nextLevel,
-      );
+      if (nextLevel > currentUnlocked) {
+        await prefs.setInt(
+          'unlocked_level',
+          nextLevel,
+        );
+      }
     }
 
     // Save best score
@@ -79,11 +94,11 @@ class _WinScreenState extends State<WinScreen> {
       );
     }
 
-    if (mounted) {
-      setState(() {
-        _saving = false;
-      });
-    }
+    if (!mounted) return;
+
+    setState(() {
+      _saving = false;
+    });
   }
 
   void _nextLevel() {
@@ -108,6 +123,9 @@ class _WinScreenState extends State<WinScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isLastLevel =
+        widget.level >= 500;
+
     return Scaffold(
       backgroundColor:
           const Color(0xFF1B1B2F),
@@ -120,20 +138,22 @@ class _WinScreenState extends State<WinScreen> {
               mainAxisAlignment:
                   MainAxisAlignment.center,
               children: [
-                const Text(
-                  '🎉',
-                  style: TextStyle(
+                Text(
+                  isLastLevel ? '🏆' : '🎉',
+                  style: const TextStyle(
                     fontSize: 70,
                   ),
                 ),
 
                 const SizedBox(height: 10),
 
-                const Text(
-                  'LEVEL COMPLETE!',
+                Text(
+                  isLastLevel
+                      ? 'ALL LEVELS COMPLETE!'
+                      : 'LEVEL COMPLETE!',
                   textAlign:
                       TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 30,
                     fontWeight:
@@ -233,6 +253,17 @@ class _WinScreenState extends State<WinScreen> {
                               FontWeight.bold,
                         ),
                       ),
+
+                      const SizedBox(height: 4),
+
+                      Text(
+                        'Target: $targetScore',
+                        style:
+                            const TextStyle(
+                          color: Colors.white54,
+                          fontSize: 13,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -248,8 +279,8 @@ class _WinScreenState extends State<WinScreen> {
                         ? null
                         : _nextLevel,
                     child: Text(
-                      widget.level >= 500
-                          ? '🏆 ALL LEVELS COMPLETE'
+                      isLastLevel
+                          ? '🏆 FINISH'
                           : 'NEXT LEVEL  →',
                       style:
                           const TextStyle(
