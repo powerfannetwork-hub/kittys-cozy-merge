@@ -13,8 +13,6 @@ class HomeScreen extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
-
-              // HEADER
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -28,7 +26,6 @@ class HomeScreen extends StatelessWidget {
                 ),
                 child: Column(
                   children: [
-
                     Row(
                       children: [
                         const CircleAvatar(
@@ -39,15 +36,12 @@ class HomeScreen extends StatelessWidget {
                             size: 34,
                           ),
                         ),
-
                         const SizedBox(width: 12),
-
                         Expanded(
                           child: Column(
                             crossAxisAlignment:
                                 CrossAxisAlignment.start,
                             children: [
-
                               const Text(
                                 "Player",
                                 style: TextStyle(
@@ -56,26 +50,22 @@ class HomeScreen extends StatelessWidget {
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
-
                               const SizedBox(height: 6),
-
                               ClipRRect(
                                 borderRadius:
                                     BorderRadius.circular(10),
-                                child: LinearProgressIndicator(
+                                child: const LinearProgressIndicator(
                                   value: 0.35,
                                   minHeight: 10,
                                   backgroundColor:
                                       Colors.white24,
                                   valueColor:
-                                      const AlwaysStoppedAnimation(
+                                      AlwaysStoppedAnimation(
                                     Colors.white,
                                   ),
                                 ),
                               ),
-
                               const SizedBox(height: 4),
-
                               const Text(
                                 "Level 1 • XP 35%",
                                 style: TextStyle(
@@ -87,12 +77,9 @@ class HomeScreen extends StatelessWidget {
                         ),
                       ],
                     ),
-
                     const SizedBox(height: 20),
-
                     Row(
                       children: [
-
                         Expanded(
                           child: _statusCard(
                             icon: Icons.favorite,
@@ -101,9 +88,7 @@ class HomeScreen extends StatelessWidget {
                             title: "Lives",
                           ),
                         ),
-
                         const SizedBox(width: 10),
-
                         Expanded(
                           child: _statusCard(
                             icon: Icons.diamond,
@@ -112,9 +97,7 @@ class HomeScreen extends StatelessWidget {
                             title: "Gems",
                           ),
                         ),
-
                         const SizedBox(width: 10),
-
                         Expanded(
                           child: _statusCard(
                             icon: Icons.monetization_on,
@@ -130,8 +113,6 @@ class HomeScreen extends StatelessWidget {
               ),
 
               const SizedBox(height: 20),
-
-              // PLAY BUTTON
 
               SizedBox(
                 width: double.infinity,
@@ -149,8 +130,6 @@ class HomeScreen extends StatelessWidget {
               ),
 
               const SizedBox(height: 20),
-
-              // EVENT BANNER
 
               Container(
                 width: double.infinity,
@@ -191,8 +170,7 @@ class HomeScreen extends StatelessWidget {
 
               _menuCard(
                 title: "Quests",
-                subtitle:
-                    "Complete tasks and earn rewards",
+                subtitle: "Complete tasks and earn rewards",
                 icon: Icons.task_alt,
               ),
 
@@ -200,8 +178,7 @@ class HomeScreen extends StatelessWidget {
 
               _menuCard(
                 title: "Events",
-                subtitle:
-                    "Join limited-time competitions",
+                subtitle: "Join limited-time competitions",
                 icon: Icons.celebration,
               ),
 
@@ -209,8 +186,7 @@ class HomeScreen extends StatelessWidget {
 
               _menuCard(
                 title: "Friends",
-                subtitle:
-                    "Send and receive lives ❤️",
+                subtitle: "Send and receive lives ❤️",
                 icon: Icons.people,
               ),
 
@@ -218,8 +194,7 @@ class HomeScreen extends StatelessWidget {
 
               _menuCard(
                 title: "League",
-                subtitle:
-                    "Current Rank #14",
+                subtitle: "Current Rank #14",
                 icon: Icons.emoji_events,
               ),
 
@@ -227,8 +202,7 @@ class HomeScreen extends StatelessWidget {
 
               _menuCard(
                 title: "Shop",
-                subtitle:
-                    "Special Gem Offers Available",
+                subtitle: "Special Gem Offers Available",
                 icon: Icons.store,
               ),
 
@@ -247,19 +221,14 @@ class HomeScreen extends StatelessWidget {
     required String title,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        vertical: 14,
-      ),
+      padding: const EdgeInsets.symmetric(vertical: 14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
       ),
       child: Column(
         children: [
-          Icon(
-            icon,
-            color: color,
-          ),
+          Icon(icon, color: color),
           const SizedBox(height: 6),
           Text(
             value,
@@ -270,9 +239,7 @@ class HomeScreen extends StatelessWidget {
           ),
           Text(
             title,
-            style: const TextStyle(
-              fontSize: 12,
-            ),
+            style: const TextStyle(fontSize: 12),
           ),
         ],
       ),
@@ -288,7 +255,7 @@ class HomeScreen extends StatelessWidget {
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor:
-              AppTheme.primary.withValues(alpha: 0.15),
+              AppTheme.primary.withOpacity(0.15),
           child: Icon(
             icon,
             color: AppTheme.primary,
