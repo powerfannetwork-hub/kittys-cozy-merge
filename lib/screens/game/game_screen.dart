@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../models/gem_tile.dart';
-import '../../models/gem_type.dart';
 import '../../services/board_service.dart';
+import 'lose_screen.dart';
+import 'win_screen.dart';
 
 class GameScreen extends StatefulWidget {
   final int level;
@@ -13,10 +14,12 @@ class GameScreen extends StatefulWidget {
   });
 
   @override
-  State<GameScreen> createState() => _GameScreenState();
+  State<GameScreen> createState() =>
+      _GameScreenState();
 }
 
-class _GameScreenState extends State<GameScreen> {
+class _GameScreenState
+    extends State<GameScreen> {
   late List<List<GemTile>> board;
 
   GemTile? selectedTile;
@@ -24,18 +27,51 @@ class _GameScreenState extends State<GameScreen> {
   int score = 0;
   int moves = 30;
 
+  int get targetScore {
+    return 500 + ((widget.level - 1) * 50);
+  }
+
   @override
   void initState() {
     super.initState();
     board = BoardService.createBoard();
   }
 
-  void _handleTap(int row, int column) {
+  void _checkGameState() {
+    if (score >= targetScore) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => WinScreen(
+            level: widget.level,
+            score: score,
+          ),
+        ),
+      );
+      return;
+    }
+
+    if (moves <= 0) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => LoseScreen(
+            level: widget.level,
+            score: score,
+          ),
+        ),
+      );
+    }
+  }
+
+  void _handleTap(
+    int row,
+    int column,
+  ) {
     if (moves <= 0) return;
 
     final tappedTile = board[row][column];
 
-    // First selection
     if (selectedTile == null) {
       setState(() {
         selectedTile = tappedTile;
@@ -43,7 +79,6 @@ class _GameScreenState extends State<GameScreen> {
       return;
     }
 
-    // Same tile
     if (selectedTile == tappedTile) {
       setState(() {
         selectedTile = null;
@@ -51,7 +86,6 @@ class _GameScreenState extends State<GameScreen> {
       return;
     }
 
-    // Not adjacent
     if (!BoardService.areAdjacent(
       selectedTile!,
       tappedTile,
@@ -62,7 +96,6 @@ class _GameScreenState extends State<GameScreen> {
       return;
     }
 
-    // Try swap
     final success = BoardService.trySwap(
       board,
       selectedTile!,
@@ -78,6 +111,8 @@ class _GameScreenState extends State<GameScreen> {
         moves--;
         selectedTile = null;
       });
+
+      _checkGameState();
     } else {
       setState(() {
         selectedTile = null;
@@ -100,24 +135,47 @@ class _GameScreenState extends State<GameScreen> {
       body: Column(
         children: [
           Container(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              mainAxisAlignment:
-                  MainAxisAlignment.spaceBetween,
+            padding:
+                const EdgeInsets.all(16),
+            child: Column(
               children: [
-                Text(
-                  'Score: $score',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                Row(
+                  mainAxisAlignment:
+                      MainAxisAlignment
+                          .spaceBetween,
+                  children: [
+                    Text(
+                      'Score: $score',
+                      style:
+                          const TextStyle(
+                        fontSize: 18,
+                        fontWeight:
+                            FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      'Moves: $moves',
+                      style:
+                          const TextStyle(
+                        fontSize: 18,
+                        fontWeight:
+                            FontWeight.bold,
+                      ),
+                    ),
+                  ],
                 ),
+
+                const SizedBox(height: 10),
+
+                LinearProgressIndicator(
+                  value: score /
+                      targetScore,
+                ),
+
+                const SizedBox(height: 6),
+
                 Text(
-                  'Moves: $moves',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  'Target: $targetScore',
                 ),
               ],
             ),
@@ -125,7 +183,10 @@ class _GameScreenState extends State<GameScreen> {
 
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.all(12),
+              padding:
+                  const EdgeInsets.all(
+                12,
+              ),
               child: GridView.builder(
                 itemCount: 64,
                 gridDelegate:
@@ -134,36 +195,49 @@ class _GameScreenState extends State<GameScreen> {
                   crossAxisSpacing: 4,
                   mainAxisSpacing: 4,
                 ),
-                itemBuilder: (context, index) {
-                  final row = index ~/ 8;
-                  final col = index % 8;
+                itemBuilder:
+                    (context, index) {
+                  final row =
+                      index ~/ 8;
 
-                  final tile = board[row][col];
+                  final col =
+                      index % 8;
+
+                  final tile =
+                      board[row][col];
 
                   final selected =
                       _isSelected(tile);
 
                   return GestureDetector(
                     onTap: () =>
-                        _handleTap(row, col),
-                    child: AnimatedContainer(
+                        _handleTap(
+                      row,
+                      col,
+                    ),
+                    child:
+                        AnimatedContainer(
                       duration:
                           const Duration(
-                        milliseconds: 150,
+                        milliseconds:
+                            150,
                       ),
-                      decoration: BoxDecoration(
+                      decoration:
+                          BoxDecoration(
                         color: selected
                             ? Colors.amber
                             : Colors.white,
+                        border:
+                            Border.all(
+                          color: selected
+                              ? Colors.orange
+                              : Colors
+                                  .transparent,
+                          width: 3,
+                        ),
                         borderRadius:
                             BorderRadius.circular(
                           12,
-                        ),
-                        border: Border.all(
-                          color: selected
-                              ? Colors.orange
-                              : Colors.transparent,
-                          width: 3,
                         ),
                       ),
                       child: Center(
@@ -171,7 +245,8 @@ class _GameScreenState extends State<GameScreen> {
                           tile.type.emoji,
                           style:
                               const TextStyle(
-                            fontSize: 26,
+                            fontSize:
+                                26,
                           ),
                         ),
                       ),
