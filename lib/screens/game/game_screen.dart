@@ -45,6 +45,10 @@ class _GameScreenState extends State<GameScreen> {
     return widget.level >= 60;
   }
 
+  bool get hasLockedTile {
+    return widget.level >= 90;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -276,8 +280,8 @@ class _GameScreenState extends State<GameScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.blue
-                .withOpacity(0.25),
+            color:
+                Colors.blue.withOpacity(0.25),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -343,8 +347,8 @@ class _GameScreenState extends State<GameScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.brown
-                .withOpacity(0.30),
+            color:
+                Colors.brown.withOpacity(0.30),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -389,6 +393,69 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
+  Widget _buildLockedTile(
+    GemTile tile,
+  ) {
+    final hp = tile.lockedHp;
+
+    return AnimatedContainer(
+      duration: const Duration(
+        milliseconds: 250,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade700,
+        borderRadius:
+            BorderRadius.circular(12),
+        border: Border.all(
+          color: hp <= 1
+              ? Colors.black
+              : Colors.grey.shade500,
+          width: 2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color:
+                Colors.black.withOpacity(0.30),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          const Text(
+            '🔒',
+            style: TextStyle(
+              fontSize: 27,
+            ),
+          ),
+          Positioned(
+            right: 3,
+            top: 3,
+            child: Container(
+              width: 20,
+              height: 20,
+              alignment: Alignment.center,
+              decoration: const BoxDecoration(
+                color: Colors.black,
+                shape: BoxShape.circle,
+              ),
+              child: Text(
+                '$hp',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildNormalTile(
     GemTile tile,
     bool selected,
@@ -411,8 +478,8 @@ class _GameScreenState extends State<GameScreen> {
             BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black
-                .withOpacity(0.04),
+            color:
+                Colors.black.withOpacity(0.04),
             blurRadius: 3,
             offset: const Offset(0, 1),
           ),
@@ -441,6 +508,10 @@ class _GameScreenState extends State<GameScreen> {
 
     if (tile.blockHp > 0) {
       return _buildBlockTile(tile);
+    }
+
+    if (tile.lockedHp > 0) {
+      return _buildLockedTile(tile);
     }
 
     return _buildNormalTile(
@@ -599,6 +670,29 @@ class _GameScreenState extends State<GameScreen> {
                               FontWeight.bold,
                           color:
                               Colors.brown,
+                        ),
+                      ),
+                    ],
+                    if (hasLockedTile) ...[
+                      const SizedBox(
+                        width: 10,
+                      ),
+                      const Text(
+                        '•',
+                        style: TextStyle(
+                          color: Colors.grey,
+                        ),
+                      ),
+                      const SizedBox(
+                        width: 10,
+                      ),
+                      const Text(
+                        '🔒 Locked',
+                        style: TextStyle(
+                          fontWeight:
+                              FontWeight.bold,
+                          color:
+                              Colors.black87,
                         ),
                       ),
                     ],
