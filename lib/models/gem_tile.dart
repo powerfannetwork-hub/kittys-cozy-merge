@@ -7,7 +7,6 @@ class GemTile {
   GemType type;
 
   bool isMatched;
-
   bool isObstacle;
 
   GemTile({
@@ -52,7 +51,7 @@ class GemTile {
       column: json['column'] ?? 0,
       type: GemType.values.firstWhere(
         (e) => e.name == json['type'],
-        orElse: () => GemType.fire,
+        orElse: () => GemType.ruby,
       ),
       isMatched: json['isMatched'] ?? false,
       isObstacle: json['isObstacle'] ?? false,
