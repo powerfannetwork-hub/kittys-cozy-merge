@@ -11,6 +11,7 @@ class GemTile {
 
   int iceHp;
   int blockHp;
+  int lockedHp;
 
   GemTile({
     required this.row,
@@ -20,11 +21,14 @@ class GemTile {
     this.isObstacle = false,
     this.iceHp = 0,
     this.blockHp = 0,
+    this.lockedHp = 0,
   });
 
   bool get hasIce => iceHp > 0;
 
   bool get hasBlock => blockHp > 0;
+
+  bool get hasLockedTile => lockedHp > 0;
 
   GemTile copyWith({
     int? row,
@@ -34,6 +38,7 @@ class GemTile {
     bool? isObstacle,
     int? iceHp,
     int? blockHp,
+    int? lockedHp,
   }) {
     return GemTile(
       row: row ?? this.row,
@@ -43,6 +48,7 @@ class GemTile {
       isObstacle: isObstacle ?? this.isObstacle,
       iceHp: iceHp ?? this.iceHp,
       blockHp: blockHp ?? this.blockHp,
+      lockedHp: lockedHp ?? this.lockedHp,
     );
   }
 
@@ -55,6 +61,7 @@ class GemTile {
       'isObstacle': isObstacle,
       'iceHp': iceHp,
       'blockHp': blockHp,
+      'lockedHp': lockedHp,
     };
   }
 
@@ -72,6 +79,7 @@ class GemTile {
       isObstacle: json['isObstacle'] ?? false,
       iceHp: json['iceHp'] ?? 0,
       blockHp: json['blockHp'] ?? 0,
+      lockedHp: json['lockedHp'] ?? 0,
     );
   }
 }
