@@ -4,6 +4,7 @@ import '../../models/gem_tile.dart';
 import '../../models/gem_type.dart';
 import '../../services/board_service.dart';
 import '../../services/lives_service.dart';
+import '../lives/no_lives_screen.dart';
 import 'lose_screen.dart';
 import 'win_screen.dart';
 
@@ -66,18 +67,41 @@ class _GameScreenState extends State<GameScreen> {
         loading = false;
         canPlay = false;
       });
+
+      _openNoLivesScreen();
       return;
     }
 
+    final actualLives =
+        await LivesService.getLives();
+
+    if (!mounted) return;
+
     setState(() {
-      lives = unlimited
-          ? currentLives
-          : currentLives - 1;
+      lives = actualLives;
+      unlimitedLives = unlimited;
 
       loading = false;
       canPlay = true;
       board = BoardService.createBoard();
     });
+  }
+
+  Future<void> _openNoLivesScreen() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const NoLivesScreen(),
+      ),
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      loading = true;
+    });
+
+    await _prepareGame();
   }
 
   void _checkGameState() {
@@ -214,75 +238,8 @@ class _GameScreenState extends State<GameScreen> {
             'Level ${widget.level}',
           ),
         ),
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisAlignment:
-                  MainAxisAlignment.center,
-              children: [
-                const Icon(
-                  Icons.favorite,
-                  color: Colors.red,
-                  size: 70,
-                ),
-                const SizedBox(height: 20),
-                const Text(
-                  'No Lives Left',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                const Text(
-                  'You need a ❤️ to play this level.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 16,
-                  ),
-                ),
-                const SizedBox(height: 30),
-                ElevatedButton(
-                  onPressed: () async {
-                    await LivesService.addLife();
-
-                    final updatedLives =
-                        await LivesService.refreshLives();
-
-                    final unlimited =
-                        await LivesService
-                            .isUnlimitedLives();
-
-                    if (!mounted) return;
-
-                    if (updatedLives > 0 ||
-                        unlimited) {
-                      setState(() {
-                        lives = updatedLives;
-                        unlimitedLives = unlimited;
-                        loading = true;
-                      });
-
-                      _prepareGame();
-                    }
-                  },
-                  child: const Text(
-                    'GET 1 ❤️',
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                  child: const Text(
-                    'BACK',
-                  ),
-                ),
-              ],
-            ),
-          ),
+        body: const Center(
+          child: CircularProgressIndicator(),
         ),
       );
     }
