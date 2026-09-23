@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../models/gem_tile.dart';
+import '../../models/gem_type.dart';
 import '../../services/board_service.dart';
 
 class GameScreen extends StatefulWidget {
