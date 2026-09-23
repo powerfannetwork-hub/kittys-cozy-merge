@@ -14,11 +14,15 @@ class BoardService {
         _random.nextInt(GemType.values.length)];
   }
 
-  /// Creates a normal board.
+  /// Creates the game board.
   ///
-  /// [level] controls when obstacles start appearing.
-  /// Level 1-29 = normal
-  /// Level 30+ = Ice can appear.
+  /// Level 1-29  = normal board.
+  /// Level 30+   = Ice can appear.
+  ///
+  /// Ice strength:
+  /// Level 30-59  = 2 HP
+  /// Level 60-119 = 3 HP
+  /// Level 120+   = 4 HP
   static List<List<GemTile>> createBoard({
     int level = 1,
   }) {
@@ -34,18 +38,20 @@ class BoardService {
       ),
     );
 
-    // Remove starting matches.
+    // Remove starting matches so the player does not begin
+    // with a free automatic match.
     while (findMatches(board).isNotEmpty) {
+      final matches = findMatches(board);
+
       removeMatches(
         board,
-        findMatches(board),
+        matches,
       );
 
       collapseBoard(board);
       refillBoard(board);
     }
 
-    // Add Ice from level 30.
     if (level >= 30) {
       _addIce(board, level);
     }
@@ -53,9 +59,23 @@ class BoardService {
     return board;
   }
 
-  /// Adds Ice obstacles.
+  /// Returns the Ice HP for the current level.
+  static int _getIceHpForLevel(int level) {
+    if (level >= 120) {
+      return 4;
+    }
+
+    if (level >= 60) {
+      return 3;
+    }
+
+    return 2;
+  }
+
+  /// Adds Ice to the board.
   ///
-  /// The higher the level, the more Ice can appear.
+  /// Ice count gradually increases as levels become harder.
+  /// The Ice HP depends on the level.
   static void _addIce(
     List<List<GemTile>> board,
     int level,
@@ -77,6 +97,8 @@ class BoardService {
       );
     }
 
+    final iceHp = _getIceHpForLevel(level);
+
     final availablePositions = <GemTile>[];
 
     for (int row = 0; row < rows; row++) {
@@ -92,7 +114,11 @@ class BoardService {
     for (int i = 0;
         i < iceCount && i < availablePositions.length;
         i++) {
-      availablePositions[i].isObstacle = true;
+      final tile = availablePositions[i];
+
+      tile.isObstacle = true;
+      tile.iceHp = iceHp;
+      tile.isMatched = false;
     }
   }
 
@@ -114,14 +140,13 @@ class BoardService {
     GemTile first,
     GemTile second,
   ) {
-    // Obstacles cannot be moved.
+    // Ice cannot be moved.
     if (first.isObstacle ||
         second.isObstacle) {
       return;
     }
 
     final temp = first.type;
-
     first.type = second.type;
     second.type = temp;
   }
@@ -131,7 +156,7 @@ class BoardService {
     GemTile first,
     GemTile second,
   ) {
-    // Ice/obstacles cannot be selected for swapping.
+    // Ice cannot be selected for swapping.
     if (first.isObstacle ||
         second.isObstacle) {
       return false;
@@ -143,8 +168,7 @@ class BoardService {
       second,
     );
 
-    final matches =
-        findMatches(board);
+    final matches = findMatches(board);
 
     if (matches.isEmpty) {
       swapTiles(
@@ -259,6 +283,60 @@ class BoardService {
     return matches.length * 10;
   }
 
+  /// Damages each Ice that is directly beside a match.
+  ///
+  /// One match event causes one damage to an Ice, even if
+  /// several matched gems touch the same Ice.
+  ///
+  /// Example:
+  /// 🧊4 -> 🧊3 -> 🧊2 -> 🧊1 -> broken
+  static void damageAdjacentIce(
+    List<List<GemTile>> board,
+    List<GemTile> matches,
+  ) {
+    final iceToDamage = <GemTile>{};
+
+    for (final matchedTile in matches) {
+      final row = matchedTile.row;
+      final column = matchedTile.column;
+
+      final neighbors = <GemTile>[];
+
+      if (row > 0) {
+        neighbors.add(board[row - 1][column]);
+      }
+
+      if (row < rows - 1) {
+        neighbors.add(board[row + 1][column]);
+      }
+
+      if (column > 0) {
+        neighbors.add(board[row][column - 1]);
+      }
+
+      if (column < columns - 1) {
+        neighbors.add(board[row][column + 1]);
+      }
+
+      for (final neighbor in neighbors) {
+        if (neighbor.isObstacle &&
+            neighbor.iceHp > 0) {
+          iceToDamage.add(neighbor);
+        }
+      }
+    }
+
+    for (final ice in iceToDamage) {
+      ice.iceHp--;
+
+      if (ice.iceHp <= 0) {
+        ice.iceHp = 0;
+        ice.isObstacle = false;
+        ice.isMatched = true;
+      }
+    }
+  }
+
   static void removeMatches(
     List<List<GemTile>> board,
     List<GemTile> matches,
@@ -295,13 +373,10 @@ class BoardService {
             final destination =
                 board[emptyRow][col];
 
-            // Do not move into an obstacle.
+            // Do not move into an Ice tile.
             if (!destination.isObstacle) {
-              destination.type =
-                  tile.type;
-
-              destination.isMatched =
-                  false;
+              destination.type = tile.type;
+              destination.isMatched = false;
             }
           }
 
@@ -310,8 +385,7 @@ class BoardService {
       }
 
       while (emptyRow >= 0) {
-        final tile =
-            board[emptyRow][col];
+        final tile = board[emptyRow][col];
 
         if (!tile.isObstacle) {
           tile.isMatched = true;
@@ -351,26 +425,31 @@ class BoardService {
     int totalScore = 0;
 
     while (true) {
-      final matches =
-          findMatches(board);
+      final matches = findMatches(board);
 
       if (matches.isEmpty) {
         break;
       }
 
-      totalScore +=
-          calculateScore(matches);
+      totalScore += calculateScore(matches);
 
+      // First damage Ice beside this match.
+      damageAdjacentIce(
+        board,
+        matches,
+      );
+
+      // Then remove the matched gems.
       removeMatches(
         board,
         matches,
       );
 
       collapseBoard(board);
-
       refillBoard(board);
     }
 
     return totalScore;
   }
 }
+
