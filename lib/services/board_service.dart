@@ -3,6 +3,7 @@ import 'dart:math';
 import '../models/gem_tile.dart';
 import '../models/gem_type.dart';
 import 'level_block_service.dart';
+import 'level_locked_tile_service.dart';
 import 'level_obstacle_service.dart';
 
 class BoardService {
@@ -64,6 +65,20 @@ class BoardService {
       }
     }
 
+    if (level >= 90) {
+      final lockedTileCount =
+          LevelLockedTileService
+              .getLockedTileCount(level);
+
+      if (lockedTileCount > 0) {
+        _addLockedTiles(
+          board,
+          level,
+          lockedTileCount,
+        );
+      }
+    }
+
     return board;
   }
 
@@ -104,6 +119,7 @@ class BoardService {
       tile.isObstacle = true;
       tile.iceHp = iceHp;
       tile.blockHp = 0;
+      tile.lockedHp = 0;
       tile.isMatched = false;
     }
   }
@@ -141,8 +157,49 @@ class BoardService {
       final tile = availablePositions[i];
 
       tile.isObstacle = true;
-      tile.blockHp = blockHp;
       tile.iceHp = 0;
+      tile.blockHp = blockHp;
+      tile.lockedHp = 0;
+      tile.isMatched = false;
+    }
+  }
+
+  static void _addLockedTiles(
+    List<List<GemTile>> board,
+    int level,
+    int lockedTileCount,
+  ) {
+    final lockedHp =
+        LevelLockedTileService.getLockedHp(level);
+
+    if (lockedHp <= 0) {
+      return;
+    }
+
+    final availablePositions = <GemTile>[];
+
+    for (int row = 0; row < rows; row++) {
+      for (int col = 0; col < columns; col++) {
+        final tile = board[row][col];
+
+        if (!tile.isObstacle) {
+          availablePositions.add(tile);
+        }
+      }
+    }
+
+    availablePositions.shuffle(_random);
+
+    for (int i = 0;
+        i < lockedTileCount &&
+            i < availablePositions.length;
+        i++) {
+      final tile = availablePositions[i];
+
+      tile.isObstacle = true;
+      tile.iceHp = 0;
+      tile.blockHp = 0;
+      tile.lockedHp = lockedHp;
       tile.isMatched = false;
     }
   }
@@ -306,6 +363,42 @@ class BoardService {
     return matches.length * 10;
   }
 
+  static List<GemTile> _getNeighbors(
+    List<List<GemTile>> board,
+    GemTile tile,
+  ) {
+    final neighbors = <GemTile>[];
+
+    final row = tile.row;
+    final column = tile.column;
+
+    if (row > 0) {
+      neighbors.add(
+        board[row - 1][column],
+      );
+    }
+
+    if (row < rows - 1) {
+      neighbors.add(
+        board[row + 1][column],
+      );
+    }
+
+    if (column > 0) {
+      neighbors.add(
+        board[row][column - 1],
+      );
+    }
+
+    if (column < columns - 1) {
+      neighbors.add(
+        board[row][column + 1],
+      );
+    }
+
+    return neighbors;
+  }
+
   static void damageAdjacentIce(
     List<List<GemTile>> board,
     List<GemTile> matches,
@@ -313,36 +406,8 @@ class BoardService {
     final iceToDamage = <GemTile>{};
 
     for (final matchedTile in matches) {
-      final row = matchedTile.row;
-      final column = matchedTile.column;
-
-      final neighbors = <GemTile>[];
-
-      if (row > 0) {
-        neighbors.add(
-          board[row - 1][column],
-        );
-      }
-
-      if (row < rows - 1) {
-        neighbors.add(
-          board[row + 1][column],
-        );
-      }
-
-      if (column > 0) {
-        neighbors.add(
-          board[row][column - 1],
-        );
-      }
-
-      if (column < columns - 1) {
-        neighbors.add(
-          board[row][column + 1],
-        );
-      }
-
-      for (final neighbor in neighbors) {
+      for (final neighbor
+          in _getNeighbors(board, matchedTile)) {
         if (neighbor.isObstacle &&
             neighbor.iceHp > 0) {
           iceToDamage.add(neighbor);
@@ -368,36 +433,8 @@ class BoardService {
     final blocksToDamage = <GemTile>{};
 
     for (final matchedTile in matches) {
-      final row = matchedTile.row;
-      final column = matchedTile.column;
-
-      final neighbors = <GemTile>[];
-
-      if (row > 0) {
-        neighbors.add(
-          board[row - 1][column],
-        );
-      }
-
-      if (row < rows - 1) {
-        neighbors.add(
-          board[row + 1][column],
-        );
-      }
-
-      if (column > 0) {
-        neighbors.add(
-          board[row][column - 1],
-        );
-      }
-
-      if (column < columns - 1) {
-        neighbors.add(
-          board[row][column + 1],
-        );
-      }
-
-      for (final neighbor in neighbors) {
+      for (final neighbor
+          in _getNeighbors(board, matchedTile)) {
         if (neighbor.isObstacle &&
             neighbor.blockHp > 0) {
           blocksToDamage.add(neighbor);
@@ -412,6 +449,34 @@ class BoardService {
         block.blockHp = 0;
         block.isObstacle = false;
         block.isMatched = true;
+      }
+    }
+  }
+
+  static void damageAdjacentLockedTiles(
+    List<List<GemTile>> board,
+    List<GemTile> matches,
+  ) {
+    final lockedTilesToDamage = <GemTile>{};
+
+    for (final matchedTile in matches) {
+      for (final neighbor
+          in _getNeighbors(board, matchedTile)) {
+        if (neighbor.isObstacle &&
+            neighbor.lockedHp > 0) {
+          lockedTilesToDamage.add(neighbor);
+        }
+      }
+    }
+
+    for (final lockedTile
+        in lockedTilesToDamage) {
+      lockedTile.lockedHp--;
+
+      if (lockedTile.lockedHp <= 0) {
+        lockedTile.lockedHp = 0;
+        lockedTile.isObstacle = false;
+        lockedTile.isMatched = true;
       }
     }
   }
@@ -523,6 +588,11 @@ class BoardService {
       );
 
       damageAdjacentBlocks(
+        board,
+        matches,
+      );
+
+      damageAdjacentLockedTiles(
         board,
         matches,
       );
