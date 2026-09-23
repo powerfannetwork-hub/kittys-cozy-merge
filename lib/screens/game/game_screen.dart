@@ -37,6 +37,31 @@ class _GameScreenState
     board = BoardService.createBoard();
   }
 
+  String _getGemEmoji(GemTile tile) {
+    switch (tile.type.name) {
+      case 'ruby':
+        return '🔴';
+
+      case 'sapphire':
+        return '🔵';
+
+      case 'emerald':
+        return '🟢';
+
+      case 'topaz':
+        return '🟡';
+
+      case 'amethyst':
+        return '🟣';
+
+      case 'diamond':
+        return '💎';
+
+      default:
+        return '🔴';
+    }
+  }
+
   void _checkGameState() {
     if (score >= targetScore) {
       Navigator.pushReplacement(
@@ -164,23 +189,18 @@ class _GameScreenState
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 10),
-
                 LinearProgressIndicator(
                   value: score /
                       targetScore,
                 ),
-
                 const SizedBox(height: 6),
-
                 Text(
                   'Target: $targetScore',
                 ),
               ],
             ),
           ),
-
           Expanded(
             child: Padding(
               padding:
@@ -242,7 +262,7 @@ class _GameScreenState
                       ),
                       child: Center(
                         child: Text(
-                          tile.type.emoji,
+                          _getGemEmoji(tile),
                           style:
                               const TextStyle(
                             fontSize:
