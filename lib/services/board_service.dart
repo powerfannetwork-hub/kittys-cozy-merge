@@ -2,6 +2,7 @@ import 'dart:math';
 
 import '../models/gem_tile.dart';
 import '../models/gem_type.dart';
+import 'level_block_service.dart';
 import 'level_obstacle_service.dart';
 
 class BoardService {
@@ -15,11 +16,6 @@ class BoardService {
         _random.nextInt(GemType.values.length)];
   }
 
-  /// Creates the game board.
-  ///
-  /// Levels 1-29 have no Ice.
-  /// Level 30 introduces Ice.
-  /// After Level 30, Ice appears randomly on selected levels.
   static List<List<GemTile>> createBoard({
     int level = 1,
   }) {
@@ -35,7 +31,6 @@ class BoardService {
       ),
     );
 
-    // Remove starting matches.
     while (findMatches(board).isNotEmpty) {
       final matches = findMatches(board);
 
@@ -48,16 +43,30 @@ class BoardService {
       refillBoard(board);
     }
 
-    // Add Ice only when the current level requires it.
     if (level >= 30 &&
         LevelObstacleService.shouldHaveIce(level)) {
-      _addIce(board, level);
+      _addIce(
+        board,
+        level,
+      );
+    }
+
+    if (level >= 60) {
+      final blockCount =
+          LevelBlockService.getBlockCount(level);
+
+      if (blockCount > 0) {
+        _addBlocks(
+          board,
+          level,
+          blockCount,
+        );
+      }
     }
 
     return board;
   }
 
-  /// Adds Ice obstacles to the board.
   static void _addIce(
     List<List<GemTile>> board,
     int level,
@@ -76,9 +85,11 @@ class BoardService {
 
     for (int row = 0; row < rows; row++) {
       for (int col = 0; col < columns; col++) {
-        availablePositions.add(
-          board[row][col],
-        );
+        final tile = board[row][col];
+
+        if (!tile.isObstacle) {
+          availablePositions.add(tile);
+        }
       }
     }
 
@@ -92,6 +103,46 @@ class BoardService {
 
       tile.isObstacle = true;
       tile.iceHp = iceHp;
+      tile.blockHp = 0;
+      tile.isMatched = false;
+    }
+  }
+
+  static void _addBlocks(
+    List<List<GemTile>> board,
+    int level,
+    int blockCount,
+  ) {
+    final blockHp =
+        LevelBlockService.getBlockHp(level);
+
+    if (blockHp <= 0) {
+      return;
+    }
+
+    final availablePositions = <GemTile>[];
+
+    for (int row = 0; row < rows; row++) {
+      for (int col = 0; col < columns; col++) {
+        final tile = board[row][col];
+
+        if (!tile.isObstacle) {
+          availablePositions.add(tile);
+        }
+      }
+    }
+
+    availablePositions.shuffle(_random);
+
+    for (int i = 0;
+        i < blockCount &&
+            i < availablePositions.length;
+        i++) {
+      final tile = availablePositions[i];
+
+      tile.isObstacle = true;
+      tile.blockHp = blockHp;
+      tile.iceHp = 0;
       tile.isMatched = false;
     }
   }
@@ -114,7 +165,6 @@ class BoardService {
     GemTile first,
     GemTile second,
   ) {
-    // Obstacles cannot be moved.
     if (first.isObstacle ||
         second.isObstacle) {
       return;
@@ -131,7 +181,6 @@ class BoardService {
     GemTile first,
     GemTile second,
   ) {
-    // Obstacles cannot be selected.
     if (first.isObstacle ||
         second.isObstacle) {
       return false;
@@ -164,7 +213,6 @@ class BoardService {
   ) {
     final matches = <GemTile>{};
 
-    // Horizontal matches.
     for (int row = 0; row < rows; row++) {
       int streak = 1;
 
@@ -206,7 +254,6 @@ class BoardService {
       }
     }
 
-    // Vertical matches.
     for (int col = 0;
         col < columns;
         col++) {
@@ -259,7 +306,6 @@ class BoardService {
     return matches.length * 10;
   }
 
-  /// Damages each Ice tile adjacent to a match.
   static void damageAdjacentIce(
     List<List<GemTile>> board,
     List<GemTile> matches,
@@ -311,6 +357,61 @@ class BoardService {
         ice.iceHp = 0;
         ice.isObstacle = false;
         ice.isMatched = true;
+      }
+    }
+  }
+
+  static void damageAdjacentBlocks(
+    List<List<GemTile>> board,
+    List<GemTile> matches,
+  ) {
+    final blocksToDamage = <GemTile>{};
+
+    for (final matchedTile in matches) {
+      final row = matchedTile.row;
+      final column = matchedTile.column;
+
+      final neighbors = <GemTile>[];
+
+      if (row > 0) {
+        neighbors.add(
+          board[row - 1][column],
+        );
+      }
+
+      if (row < rows - 1) {
+        neighbors.add(
+          board[row + 1][column],
+        );
+      }
+
+      if (column > 0) {
+        neighbors.add(
+          board[row][column - 1],
+        );
+      }
+
+      if (column < columns - 1) {
+        neighbors.add(
+          board[row][column + 1],
+        );
+      }
+
+      for (final neighbor in neighbors) {
+        if (neighbor.isObstacle &&
+            neighbor.blockHp > 0) {
+          blocksToDamage.add(neighbor);
+        }
+      }
+    }
+
+    for (final block in blocksToDamage) {
+      block.blockHp--;
+
+      if (block.blockHp <= 0) {
+        block.blockHp = 0;
+        block.isObstacle = false;
+        block.isMatched = true;
       }
     }
   }
@@ -417,6 +518,11 @@ class BoardService {
           calculateScore(matches);
 
       damageAdjacentIce(
+        board,
+        matches,
+      );
+
+      damageAdjacentBlocks(
         board,
         matches,
       );
