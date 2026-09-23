@@ -41,6 +41,10 @@ class _GameScreenState extends State<GameScreen> {
     return widget.level >= 30;
   }
 
+  bool get hasBlock {
+    return widget.level >= 60;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -149,7 +153,6 @@ class _GameScreenState extends State<GameScreen> {
     final tappedTile =
         board[row][column];
 
-    // Ice cannot be selected.
     if (tappedTile.isObstacle) {
       setState(() {
         selectedTile = null;
@@ -289,8 +292,6 @@ class _GameScreenState extends State<GameScreen> {
               fontSize: 27,
             ),
           ),
-
-          // Ice HP number.
           Positioned(
             right: 3,
             top: 3,
@@ -300,6 +301,73 @@ class _GameScreenState extends State<GameScreen> {
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 color: Colors.blue.shade700,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.white,
+                  width: 1.5,
+                ),
+              ),
+              child: Text(
+                '$hp',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBlockTile(
+    GemTile tile,
+  ) {
+    final hp = tile.blockHp;
+
+    return AnimatedContainer(
+      duration: const Duration(
+        milliseconds: 250,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.brown.shade400,
+        borderRadius:
+            BorderRadius.circular(12),
+        border: Border.all(
+          color: hp <= 1
+              ? Colors.brown.shade900
+              : Colors.brown.shade600,
+          width: 2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.brown
+                .withOpacity(0.30),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          const Text(
+            '🧱',
+            style: TextStyle(
+              fontSize: 27,
+            ),
+          ),
+          Positioned(
+            right: 3,
+            top: 3,
+            child: Container(
+              width: 20,
+              height: 20,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: Colors.brown.shade900,
                 shape: BoxShape.circle,
                 border: Border.all(
                   color: Colors.white,
@@ -367,8 +435,12 @@ class _GameScreenState extends State<GameScreen> {
     GemTile tile,
     bool selected,
   ) {
-    if (tile.isObstacle) {
+    if (tile.iceHp > 0) {
       return _buildIceTile(tile);
+    }
+
+    if (tile.blockHp > 0) {
+      return _buildBlockTile(tile);
     }
 
     return _buildNormalTile(
@@ -465,9 +537,7 @@ class _GameScreenState extends State<GameScreen> {
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 10),
-
                 LinearProgressIndicator(
                   value:
                       (score /
@@ -477,9 +547,7 @@ class _GameScreenState extends State<GameScreen> {
                     1.0,
                   ),
                 ),
-
                 const SizedBox(height: 6),
-
                 Row(
                   mainAxisAlignment:
                       MainAxisAlignment
@@ -488,7 +556,6 @@ class _GameScreenState extends State<GameScreen> {
                     Text(
                       'Target: $targetScore',
                     ),
-
                     if (hasIce) ...[
                       const SizedBox(
                         width: 10,
@@ -512,12 +579,34 @@ class _GameScreenState extends State<GameScreen> {
                         ),
                       ),
                     ],
+                    if (hasBlock) ...[
+                      const SizedBox(
+                        width: 10,
+                      ),
+                      const Text(
+                        '•',
+                        style: TextStyle(
+                          color: Colors.grey,
+                        ),
+                      ),
+                      const SizedBox(
+                        width: 10,
+                      ),
+                      const Text(
+                        '🧱 Block',
+                        style: TextStyle(
+                          fontWeight:
+                              FontWeight.bold,
+                          color:
+                              Colors.brown,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ],
             ),
           ),
-
           Expanded(
             child: Padding(
               padding:
