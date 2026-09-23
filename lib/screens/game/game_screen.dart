@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../models/gem_tile.dart';
+import '../../models/gem_type.dart';
 import '../../services/board_service.dart';
 import '../../services/lives_service.dart';
 import 'lose_screen.dart';
@@ -15,8 +16,7 @@ class GameScreen extends StatefulWidget {
   });
 
   @override
-  State<GameScreen> createState() =>
-      _GameScreenState();
+  State<GameScreen> createState() => _GameScreenState();
 }
 
 class _GameScreenState extends State<GameScreen> {
@@ -165,6 +165,28 @@ class _GameScreenState extends State<GameScreen> {
 
   bool _isSelected(GemTile tile) {
     return selectedTile == tile;
+  }
+
+  String _getGemEmoji(GemType type) {
+    switch (type) {
+      case GemType.ruby:
+        return '🔴';
+
+      case GemType.sapphire:
+        return '🔵';
+
+      case GemType.emerald:
+        return '🟢';
+
+      case GemType.topaz:
+        return '🟡';
+
+      case GemType.amethyst:
+        return '🟣';
+
+      case GemType.diamond:
+        return '💎';
+    }
   }
 
   String _formatLives() {
@@ -390,7 +412,9 @@ class _GameScreenState extends State<GameScreen> {
                       ),
                       child: Center(
                         child: Text(
-                          tile.type.emoji,
+                          _getGemEmoji(
+                            tile.type,
+                          ),
                           style:
                               const TextStyle(
                             fontSize: 26,
