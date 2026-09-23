@@ -3,48 +3,13 @@ import 'dart:math';
 class LevelObstacleService {
   static final Random _random = Random();
 
-  /// Ice ya fara bayyana daga Level 30.
+  /// Returns the number of Ice obstacles for the current level.
   ///
-  /// Amma ba ya bayyana a kowane level.
-  /// Wasu levels suna normal domin a samu sauƙin wasa.
-  static bool shouldHaveIce(int level) {
-    if (level < 30) {
-      return false;
-    }
-
-    // Level 30 yana koyar da Ice.
-    if (level == 30) {
-      return true;
-    }
-
-    // Bayan haka Ice yana bayyana lokaci-lokaci.
-    // Wasu levels normal ne.
-    final difficultyRoll = _random.nextInt(100);
-
-    if (level < 60) {
-      // 30-59: Ice yana bayyana kusan 45% na levels.
-      return difficultyRoll < 45;
-    }
-
-    if (level < 90) {
-      // 60-89: Ice kusan 50%.
-      return difficultyRoll < 50;
-    }
-
-    if (level < 120) {
-      // 90-119: Ice kusan 55%.
-      return difficultyRoll < 55;
-    }
-
-    // Higher levels: Ice yana iya bayyana kusan 60%.
-    return difficultyRoll < 60;
-  }
-
-  /// Yawan Ice a level.
-  ///
-  /// Ba kowane level bane zai samu yawan Ice iri ɗaya.
+  /// Level 1-29: No Ice.
+  /// Level 30: Ice is guaranteed.
+  /// After Level 30: Ice appears only on selected levels.
   static int getIceCount(int level) {
-    if (!shouldHaveIce(level)) {
+    if (level < 30) {
       return 0;
     }
 
@@ -52,26 +17,40 @@ class LevelObstacleService {
       return 3;
     }
 
+    final roll = _random.nextInt(100);
+
     if (level < 60) {
-      // Easy / medium Ice.
-      return 2 + _random.nextInt(4); // 2-5
+      if (roll >= 45) {
+        return 0;
+      }
+
+      return 2 + _random.nextInt(4);
     }
 
     if (level < 90) {
-      return 3 + _random.nextInt(5); // 3-7
+      if (roll >= 50) {
+        return 0;
+      }
+
+      return 3 + _random.nextInt(5);
     }
 
     if (level < 120) {
-      return 4 + _random.nextInt(5); // 4-8
+      if (roll >= 55) {
+        return 0;
+      }
+
+      return 4 + _random.nextInt(5);
     }
 
-    return 5 + _random.nextInt(6); // 5-10
+    if (roll >= 60) {
+      return 0;
+    }
+
+    return 5 + _random.nextInt(6);
   }
 
-  /// HP na Ice.
-  ///
-  /// HP yana ƙaruwa a hankali amma ba lallai
-  /// kowane level ya kasance mai wahala ba.
+  /// Returns the number of hits required to destroy Ice.
   static int getIceHp(int level) {
     if (level < 30) {
       return 0;
