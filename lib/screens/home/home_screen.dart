@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
-import 'screens/main_navigation_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -8,115 +7,179 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppTheme.background,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
 
-              // TOP BAR
-              Row(
-                children: [
-                  const CircleAvatar(
-                    radius: 28,
-                    child: Icon(Icons.person),
+              // HEADER
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [
+                      AppTheme.primary,
+                      Color(0xFF8E6BFF),
+                    ],
                   ),
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                child: Column(
+                  children: [
 
-                  const SizedBox(width: 12),
-
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    Row(
                       children: [
-                        const Text(
-                          "Player",
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
+                        const CircleAvatar(
+                          radius: 30,
+                          backgroundColor: Colors.white,
+                          child: Icon(
+                            Icons.person,
+                            size: 34,
                           ),
                         ),
 
-                        const SizedBox(height: 6),
+                        const SizedBox(width: 12),
 
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(10),
-                          child: LinearProgressIndicator(
-                            value: 0.35,
-                            minHeight: 8,
-                            backgroundColor: Colors.grey.shade300,
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment:
+                                CrossAxisAlignment.start,
+                            children: [
+
+                              const Text(
+                                "Player",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+
+                              const SizedBox(height: 6),
+
+                              ClipRRect(
+                                borderRadius:
+                                    BorderRadius.circular(10),
+                                child: LinearProgressIndicator(
+                                  value: 0.35,
+                                  minHeight: 10,
+                                  backgroundColor:
+                                      Colors.white24,
+                                  valueColor:
+                                      const AlwaysStoppedAnimation(
+                                    Colors.white,
+                                  ),
+                                ),
+                              ),
+
+                              const SizedBox(height: 4),
+
+                              const Text(
+                                "Level 1 • XP 35%",
+                                style: TextStyle(
+                                  color: Colors.white70,
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-
-                        const SizedBox(height: 4),
-
-                        const Text(
-                          "Level 1",
-                          style: TextStyle(fontSize: 12),
                         ),
                       ],
                     ),
-                  ),
-                ],
+
+                    const SizedBox(height: 20),
+
+                    Row(
+                      children: [
+
+                        Expanded(
+                          child: _statusCard(
+                            icon: Icons.favorite,
+                            color: AppTheme.life,
+                            value: "5/5",
+                            title: "Lives",
+                          ),
+                        ),
+
+                        const SizedBox(width: 10),
+
+                        Expanded(
+                          child: _statusCard(
+                            icon: Icons.diamond,
+                            color: AppTheme.gem,
+                            value: "50",
+                            title: "Gems",
+                          ),
+                        ),
+
+                        const SizedBox(width: 10),
+
+                        Expanded(
+                          child: _statusCard(
+                            icon: Icons.monetization_on,
+                            color: AppTheme.coin,
+                            value: "500",
+                            title: "Coins",
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
 
               const SizedBox(height: 20),
-
-              // STATUS BAR
-
-              Row(
-                children: [
-
-                  Expanded(
-                    child: _statusCard(
-                      icon: Icons.favorite,
-                      color: AppTheme.life,
-                      value: "5",
-                      title: "Lives",
-                    ),
-                  ),
-
-                  const SizedBox(width: 10),
-
-                  Expanded(
-                    child: _statusCard(
-                      icon: Icons.diamond,
-                      color: AppTheme.gem,
-                      value: "50",
-                      title: "Gems",
-                    ),
-                  ),
-
-                  const SizedBox(width: 10),
-
-                  Expanded(
-                    child: _statusCard(
-                      icon: Icons.monetization_on,
-                      color: AppTheme.coin,
-                      value: "500",
-                      title: "Coins",
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 25),
 
               // PLAY BUTTON
 
               SizedBox(
                 width: double.infinity,
-                height: 70,
+                height: 75,
                 child: ElevatedButton(
                   onPressed: () {},
                   child: const Text(
-                    "PLAY LEVEL 1",
+                    "▶ PLAY LEVEL 1",
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),
 
-              const SizedBox(height: 25),
+              const SizedBox(height: 20),
 
-              // DAILY REWARD
+              // EVENT BANNER
+
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.orange,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(
+                      Icons.local_fire_department,
+                      color: Colors.white,
+                    ),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        "Weekend Rush Event - Earn Extra Gems!",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 20),
 
               _menuCard(
                 title: "Daily Reward",
@@ -128,7 +191,8 @@ class HomeScreen extends StatelessWidget {
 
               _menuCard(
                 title: "Quests",
-                subtitle: "Complete tasks and earn rewards",
+                subtitle:
+                    "Complete tasks and earn rewards",
                 icon: Icons.task_alt,
               ),
 
@@ -136,7 +200,8 @@ class HomeScreen extends StatelessWidget {
 
               _menuCard(
                 title: "Events",
-                subtitle: "Limited time events",
+                subtitle:
+                    "Join limited-time competitions",
                 icon: Icons.celebration,
               ),
 
@@ -144,7 +209,8 @@ class HomeScreen extends StatelessWidget {
 
               _menuCard(
                 title: "Friends",
-                subtitle: "Send and receive lives",
+                subtitle:
+                    "Send and receive lives ❤️",
                 icon: Icons.people,
               ),
 
@@ -152,11 +218,21 @@ class HomeScreen extends StatelessWidget {
 
               _menuCard(
                 title: "League",
-                subtitle: "Current Rank #14",
+                subtitle:
+                    "Current Rank #14",
                 icon: Icons.emoji_events,
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 12),
+
+              _menuCard(
+                title: "Shop",
+                subtitle:
+                    "Special Gem Offers Available",
+                icon: Icons.store,
+              ),
+
+              const SizedBox(height: 30),
             ],
           ),
         ),
@@ -164,49 +240,66 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _statusCard({
+  static Widget _statusCard({
     required IconData icon,
     required Color color,
     required String value,
     required String title,
   }) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          vertical: 16,
-        ),
-        child: Column(
-          children: [
-            Icon(
-              icon,
-              color: color,
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        vertical: 14,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        children: [
+          Icon(
+            icon,
+            color: color,
+          ),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
             ),
-            const SizedBox(height: 6),
-            Text(
-              value,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-              ),
+          ),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 12,
             ),
-            Text(title),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _menuCard({
+  static Widget _menuCard({
     required String title,
     required String subtitle,
     required IconData icon,
   }) {
     return Card(
       child: ListTile(
-        leading: Icon(icon),
+        leading: CircleAvatar(
+          backgroundColor:
+              AppTheme.primary.withValues(alpha: 0.15),
+          child: Icon(
+            icon,
+            color: AppTheme.primary,
+          ),
+        ),
         title: Text(title),
         subtitle: Text(subtitle),
-        trailing: const Icon(Icons.arrow_forward_ios),
+        trailing: const Icon(
+          Icons.arrow_forward_ios,
+          size: 16,
+        ),
       ),
     );
   }
