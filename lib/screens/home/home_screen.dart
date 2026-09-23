@@ -48,15 +48,13 @@ class HomeScreen extends StatelessWidget {
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontSize: 20,
-                                  fontWeight:
-                                      FontWeight.bold,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                               const SizedBox(height: 6),
                               ClipRRect(
                                 borderRadius:
-                                    BorderRadius.circular(
-                                        10),
+                                    BorderRadius.circular(10),
                                 child:
                                     const LinearProgressIndicator(
                                   value: 0.35,
@@ -104,8 +102,7 @@ class HomeScreen extends StatelessWidget {
                         const SizedBox(width: 10),
                         Expanded(
                           child: _statusCard(
-                            icon:
-                                Icons.monetization_on,
+                            icon: Icons.monetization_on,
                             color: AppTheme.coin,
                             value: "500",
                             title: "Coins",
@@ -128,9 +125,7 @@ class HomeScreen extends StatelessWidget {
                       context,
                       MaterialPageRoute(
                         builder: (_) =>
-                            const LevelMapScreen(
-                          unlockedLevel: 1,
-                        ),
+                            const LevelMapScreen(),
                       ),
                     );
                   },
@@ -138,8 +133,7 @@ class HomeScreen extends StatelessWidget {
                     "▶ PLAY",
                     style: TextStyle(
                       fontSize: 22,
-                      fontWeight:
-                          FontWeight.bold,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
@@ -149,18 +143,15 @@ class HomeScreen extends StatelessWidget {
 
               Container(
                 width: double.infinity,
-                padding:
-                    const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: Colors.orange,
-                  borderRadius:
-                      BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(20),
                 ),
                 child: const Row(
                   children: [
                     Icon(
-                      Icons
-                          .local_fire_department,
+                      Icons.local_fire_department,
                       color: Colors.white,
                     ),
                     SizedBox(width: 10),
@@ -169,8 +160,7 @@ class HomeScreen extends StatelessWidget {
                         "Weekend Rush Event - Earn Extra Gems!",
                         style: TextStyle(
                           color: Colors.white,
-                          fontWeight:
-                              FontWeight.bold,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
@@ -182,8 +172,7 @@ class HomeScreen extends StatelessWidget {
 
               _menuCard(
                 title: "Daily Reward",
-                subtitle:
-                    "Claim today's reward",
+                subtitle: "Claim today's reward",
                 icon: Icons.card_giftcard,
               ),
 
@@ -191,8 +180,7 @@ class HomeScreen extends StatelessWidget {
 
               _menuCard(
                 title: "Quests",
-                subtitle:
-                    "Complete tasks and earn rewards",
+                subtitle: "Complete tasks and earn rewards",
                 icon: Icons.task_alt,
               ),
 
@@ -200,8 +188,7 @@ class HomeScreen extends StatelessWidget {
 
               _menuCard(
                 title: "Events",
-                subtitle:
-                    "Join limited-time competitions",
+                subtitle: "Join limited-time competitions",
                 icon: Icons.celebration,
               ),
 
@@ -209,8 +196,7 @@ class HomeScreen extends StatelessWidget {
 
               _menuCard(
                 title: "Friends",
-                subtitle:
-                    "Send and receive lives ❤️",
+                subtitle: "Send and receive lives ❤️",
                 icon: Icons.people,
               ),
 
@@ -218,8 +204,7 @@ class HomeScreen extends StatelessWidget {
 
               _menuCard(
                 title: "League",
-                subtitle:
-                    "Current Rank #14",
+                subtitle: "Current Rank #14",
                 icon: Icons.emoji_events,
               ),
 
@@ -227,8 +212,7 @@ class HomeScreen extends StatelessWidget {
 
               _menuCard(
                 title: "Shop",
-                subtitle:
-                    "Special Gem Offers Available",
+                subtitle: "Special Gem Offers Available",
                 icon: Icons.store,
               ),
 
@@ -247,14 +231,12 @@ class HomeScreen extends StatelessWidget {
     required String title,
   }) {
     return Container(
-      padding:
-          const EdgeInsets.symmetric(
+      padding: const EdgeInsets.symmetric(
         vertical: 14,
       ),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius:
-            BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(18),
       ),
       child: Column(
         children: [
@@ -266,8 +248,7 @@ class HomeScreen extends StatelessWidget {
           Text(
             value,
             style: const TextStyle(
-              fontWeight:
-                  FontWeight.bold,
+              fontWeight: FontWeight.bold,
               fontSize: 18,
             ),
           ),
@@ -291,8 +272,7 @@ class HomeScreen extends StatelessWidget {
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor:
-              AppTheme.primary.withOpacity(
-                  0.15),
+              AppTheme.primary.withOpacity(0.15),
           child: Icon(
             icon,
             color: AppTheme.primary,
