@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-class WinScreen extends StatelessWidget {
+import 'game_screen.dart';
+
+class WinScreen extends StatefulWidget {
   final int level;
   final int score;
 
@@ -10,79 +13,303 @@ class WinScreen extends StatelessWidget {
     required this.score,
   });
 
+  @override
+  State<WinScreen> createState() => _WinScreenState();
+}
+
+class _WinScreenState extends State<WinScreen> {
+  bool _saving = true;
+
   int get stars {
-    if (score >= 1500) return 3;
-    if (score >= 1000) return 2;
-    if (score >= 500) return 1;
-    return 0;
+    if (widget.score >= 1500) return 3;
+    if (widget.score >= 1000) return 2;
+    return 1;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _saveProgress();
+  }
+
+  Future<void> _saveProgress() async {
+    final prefs =
+        await SharedPreferences.getInstance();
+
+    // Current unlocked level
+    final currentUnlocked =
+        prefs.getInt('unlocked_level') ?? 1;
+
+    // Unlock next level
+    final nextLevel = widget.level + 1;
+
+    if (nextLevel > currentUnlocked &&
+        widget.level < 500) {
+      await prefs.setInt(
+        'unlocked_level',
+        nextLevel,
+      );
+    }
+
+    // Save best score
+    final oldScore =
+        prefs.getInt(
+              'level_${widget.level}_score',
+            ) ??
+            0;
+
+    if (widget.score > oldScore) {
+      await prefs.setInt(
+        'level_${widget.level}_score',
+        widget.score,
+      );
+    }
+
+    // Save best stars
+    final oldStars =
+        prefs.getInt(
+              'level_${widget.level}_stars',
+            ) ??
+            0;
+
+    if (stars > oldStars) {
+      await prefs.setInt(
+        'level_${widget.level}_stars',
+        stars,
+      );
+    }
+
+    if (mounted) {
+      setState(() {
+        _saving = false;
+      });
+    }
+  }
+
+  void _nextLevel() {
+    if (widget.level >= 500) {
+      Navigator.pop(context);
+      return;
+    }
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => GameScreen(
+          level: widget.level + 1,
+        ),
+      ),
+    );
+  }
+
+  void _backToLevels() {
+    Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF1B1B2F),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment:
-                MainAxisAlignment.center,
-            children: [
-              const Text(
-                "🎉 LEVEL COMPLETE!",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 30,
-                  fontWeight:
-                      FontWeight.bold,
+      backgroundColor:
+          const Color(0xFF1B1B2F),
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding:
+                const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment:
+                  MainAxisAlignment.center,
+              children: [
+                const Text(
+                  '🎉',
+                  style: TextStyle(
+                    fontSize: 70,
+                  ),
                 ),
-              ),
 
-              const SizedBox(height: 20),
+                const SizedBox(height: 10),
 
-              Row(
-                mainAxisAlignment:
-                    MainAxisAlignment.center,
-                children: List.generate(
-                  stars,
-                  (index) => const Padding(
-                    padding:
-                        EdgeInsets.symmetric(
-                      horizontal: 4,
-                    ),
-                    child: Icon(
-                      Icons.star,
-                      color: Colors.amber,
-                      size: 40,
+                const Text(
+                  'LEVEL COMPLETE!',
+                  textAlign:
+                      TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 30,
+                    fontWeight:
+                        FontWeight.bold,
+                  ),
+                ),
+
+                const SizedBox(height: 8),
+
+                Text(
+                  'Level ${widget.level}',
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 18,
+                  ),
+                ),
+
+                const SizedBox(height: 28),
+
+                // STARS
+                Row(
+                  mainAxisAlignment:
+                      MainAxisAlignment.center,
+                  children: List.generate(
+                    3,
+                    (index) {
+                      final earned =
+                          index < stars;
+
+                      return Padding(
+                        padding:
+                            const EdgeInsets
+                                .symmetric(
+                          horizontal: 5,
+                        ),
+                        child: Icon(
+                          earned
+                              ? Icons.star
+                              : Icons.star_border,
+                          color: earned
+                              ? Colors.amber
+                              : Colors.white30,
+                          size: 55,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+
+                const SizedBox(height: 25),
+
+                // SCORE
+                Container(
+                  width: double.infinity,
+                  padding:
+                      const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: Colors.white
+                        .withOpacity(0.08),
+                    borderRadius:
+                        BorderRadius.circular(20),
+                  ),
+                  child: Column(
+                    children: [
+                      const Text(
+                        'SCORE',
+                        style: TextStyle(
+                          color: Colors.white60,
+                          fontSize: 13,
+                          fontWeight:
+                              FontWeight.bold,
+                        ),
+                      ),
+
+                      const SizedBox(height: 6),
+
+                      Text(
+                        '${widget.score}',
+                        style:
+                            const TextStyle(
+                          color: Colors.white,
+                          fontSize: 32,
+                          fontWeight:
+                              FontWeight.bold,
+                        ),
+                      ),
+
+                      const SizedBox(height: 6),
+
+                      Text(
+                        '$stars / 3 Stars',
+                        style:
+                            const TextStyle(
+                          color: Colors.amber,
+                          fontSize: 16,
+                          fontWeight:
+                              FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 30),
+
+                // NEXT LEVEL
+                SizedBox(
+                  width: double.infinity,
+                  height: 58,
+                  child: ElevatedButton(
+                    onPressed: _saving
+                        ? null
+                        : _nextLevel,
+                    child: Text(
+                      widget.level >= 500
+                          ? '🏆 ALL LEVELS COMPLETE'
+                          : 'NEXT LEVEL  →',
+                      style:
+                          const TextStyle(
+                        fontSize: 18,
+                        fontWeight:
+                            FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),
-              ),
 
-              const SizedBox(height: 20),
+                const SizedBox(height: 12),
 
-              Text(
-                "Score: $score",
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 24,
+                // LEVEL MAP
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: OutlinedButton(
+                    onPressed:
+                        _saving
+                            ? null
+                            : _backToLevels,
+                    style:
+                        OutlinedButton.styleFrom(
+                      foregroundColor:
+                          Colors.white,
+                      side:
+                          const BorderSide(
+                        color:
+                            Colors.white38,
+                      ),
+                    ),
+                    child: const Text(
+                      'LEVEL MAP',
+                    ),
+                  ),
                 ),
-              ),
 
-              const SizedBox(height: 30),
+                const SizedBox(height: 15),
 
-              SizedBox(
-                width: double.infinity,
-                height: 55,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                  child:
-                      const Text("NEXT LEVEL"),
-                ),
-              ),
-            ],
+                if (_saving)
+                  const Text(
+                    'Saving progress...',
+                    style: TextStyle(
+                      color: Colors.white54,
+                      fontSize: 12,
+                    ),
+                  )
+                else
+                  const Text(
+                    '✓ Progress saved',
+                    style: TextStyle(
+                      color: Colors.greenAccent,
+                      fontSize: 12,
+                      fontWeight:
+                          FontWeight.bold,
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
       ),
