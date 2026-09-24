@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 
 import '../../models/gem_tile.dart';
 import '../../models/gem_type.dart';
+import '../../models/mission_data.dart';
 import '../../services/board_service.dart';
 import '../../services/lives_service.dart';
+import '../../services/mission_factory.dart';
 import '../lives/no_lives_screen.dart';
 import 'lose_screen.dart';
 import 'win_screen.dart';
@@ -32,6 +34,8 @@ class _GameScreenState extends State<GameScreen> {
   bool loading = true;
   bool canPlay = false;
   bool unlimitedLives = false;
+  late MissionData mission;
+  int missionProgress = 0;
 
   int get targetScore {
     return 500 + ((widget.level - 1) * 50);
@@ -56,11 +60,9 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   Future<void> _prepareGame() async {
-    final currentLives =
-        await LivesService.refreshLives();
+    final currentLives = await LivesService.refreshLives();
 
-    final unlimited =
-        await LivesService.isUnlimitedLives();
+    final unlimited = await LivesService.isUnlimitedLives();
 
     if (!mounted) return;
 
@@ -69,8 +71,7 @@ class _GameScreenState extends State<GameScreen> {
       unlimitedLives = unlimited;
     });
 
-    final allowed =
-        await LivesService.useLife();
+    final allowed = await LivesService.useLife();
 
     if (!mounted) return;
 
@@ -84,8 +85,7 @@ class _GameScreenState extends State<GameScreen> {
       return;
     }
 
-    final actualLives =
-        await LivesService.getLives();
+    final actualLives = await LivesService.getLives();
 
     if (!mounted) return;
 
@@ -98,6 +98,9 @@ class _GameScreenState extends State<GameScreen> {
       board = BoardService.createBoard(
         level: widget.level,
       );
+      mission = MissionFactory.create(
+        widget.level,
+      );
     });
   }
 
@@ -105,7 +108,7 @@ class _GameScreenState extends State<GameScreen> {
     await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => const NoLivesScreen(),
+        builder: () => const NoLivesScreen(),
       ),
     );
 
@@ -123,7 +126,7 @@ class _GameScreenState extends State<GameScreen> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => WinScreen(
+          builder: () => WinScreen(
             level: widget.level,
             score: score,
           ),
@@ -154,8 +157,7 @@ class _GameScreenState extends State<GameScreen> {
       return;
     }
 
-    final tappedTile =
-        board[row][column];
+    final tappedTile = board[row][column];
 
     if (tappedTile.isObstacle) {
       setState(() {
@@ -181,8 +183,7 @@ class _GameScreenState extends State<GameScreen> {
       return;
     }
 
-    if (tappedTile.isObstacle ||
-        selectedTile!.isObstacle) {
+    if (tappedTile.isObstacle || selectedTile!.isObstacle) {
       setState(() {
         selectedTile = null;
       });
@@ -201,16 +202,14 @@ class _GameScreenState extends State<GameScreen> {
       return;
     }
 
-    final success =
-        BoardService.trySwap(
+    final success = BoardService.trySwap(
       board,
       selectedTile!,
       tappedTile,
     );
 
     if (success) {
-      final gainedScore =
-          BoardService.processBoard(
+      final gainedScore = BoardService.processBoard(
         board,
       );
 
@@ -270,18 +269,14 @@ class _GameScreenState extends State<GameScreen> {
       ),
       decoration: BoxDecoration(
         color: Colors.lightBlue.shade100,
-        borderRadius:
-            BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: hp <= 1
-              ? Colors.blue.shade700
-              : Colors.lightBlue.shade300,
+          color: hp <= 1? Colors.blue.shade700 : Colors.lightBlue.shade300,
           width: 2,
         ),
         boxShadow: [
           BoxShadow(
-            color:
-                Colors.blue.withOpacity(0.25),
+            color: Colors.blue.withOpacity(0.25),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -337,18 +332,14 @@ class _GameScreenState extends State<GameScreen> {
       ),
       decoration: BoxDecoration(
         color: Colors.brown.shade400,
-        borderRadius:
-            BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: hp <= 1
-              ? Colors.brown.shade900
-              : Colors.brown.shade600,
+          color: hp <= 1? Colors.brown.shade900 : Colors.brown.shade600,
           width: 2,
         ),
         boxShadow: [
           BoxShadow(
-            color:
-                Colors.brown.withOpacity(0.30),
+            color: Colors.brown.withOpacity(0.30),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -404,18 +395,14 @@ class _GameScreenState extends State<GameScreen> {
       ),
       decoration: BoxDecoration(
         color: Colors.grey.shade700,
-        borderRadius:
-            BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: hp <= 1
-              ? Colors.black
-              : Colors.grey.shade500,
+          color: hp <= 1? Colors.black : Colors.grey.shade500,
           width: 2,
         ),
         boxShadow: [
           BoxShadow(
-            color:
-                Colors.black.withOpacity(0.30),
+            color: Colors.black.withOpacity(0.30),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -465,21 +452,15 @@ class _GameScreenState extends State<GameScreen> {
         milliseconds: 150,
       ),
       decoration: BoxDecoration(
-        color: selected
-            ? Colors.amber
-            : Colors.white,
+        color: selected? Colors.amber : Colors.white,
         border: Border.all(
-          color: selected
-              ? Colors.orange
-              : Colors.transparent,
+          color: selected? Colors.orange : Colors.transparent,
           width: 3,
         ),
-        borderRadius:
-            BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color:
-                Colors.black.withOpacity(0.04),
+            color: Colors.black.withOpacity(0.04),
             blurRadius: 3,
             offset: const Offset(0, 1),
           ),
@@ -525,229 +506,3 @@ class _GameScreenState extends State<GameScreen> {
     if (loading) {
       return const Scaffold(
         body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
-    }
-
-    if (!canPlay) {
-      return Scaffold(
-        appBar: AppBar(
-          title: Text(
-            'Level ${widget.level}',
-          ),
-        ),
-        body: const Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
-    }
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'Level ${widget.level}',
-        ),
-        actions: [
-          Padding(
-            padding:
-                const EdgeInsets.only(
-              right: 16,
-            ),
-            child: Center(
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.favorite,
-                    color: Colors.red,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    _formatLives(),
-                    style: const TextStyle(
-                      fontWeight:
-                          FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          Container(
-            padding:
-                const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment:
-                      MainAxisAlignment
-                          .spaceBetween,
-                  children: [
-                    Text(
-                      'Score: $score',
-                      style:
-                          const TextStyle(
-                        fontSize: 18,
-                        fontWeight:
-                            FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      'Moves: $moves',
-                      style:
-                          const TextStyle(
-                        fontSize: 18,
-                        fontWeight:
-                            FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                LinearProgressIndicator(
-                  value:
-                      (score /
-                              targetScore)
-                          .clamp(
-                    0.0,
-                    1.0,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  mainAxisAlignment:
-                      MainAxisAlignment
-                          .center,
-                  children: [
-                    Text(
-                      'Target: $targetScore',
-                    ),
-                    if (hasIce) ...[
-                      const SizedBox(
-                        width: 10,
-                      ),
-                      const Text(
-                        '•',
-                        style: TextStyle(
-                          color: Colors.grey,
-                        ),
-                      ),
-                      const SizedBox(
-                        width: 10,
-                      ),
-                      const Text(
-                        '🧊 Ice',
-                        style: TextStyle(
-                          fontWeight:
-                              FontWeight.bold,
-                          color:
-                              Colors.blue,
-                        ),
-                      ),
-                    ],
-                    if (hasBlock) ...[
-                      const SizedBox(
-                        width: 10,
-                      ),
-                      const Text(
-                        '•',
-                        style: TextStyle(
-                          color: Colors.grey,
-                        ),
-                      ),
-                      const SizedBox(
-                        width: 10,
-                      ),
-                      const Text(
-                        '🧱 Block',
-                        style: TextStyle(
-                          fontWeight:
-                              FontWeight.bold,
-                          color:
-                              Colors.brown,
-                        ),
-                      ),
-                    ],
-                    if (hasLockedTile) ...[
-                      const SizedBox(
-                        width: 10,
-                      ),
-                      const Text(
-                        '•',
-                        style: TextStyle(
-                          color: Colors.grey,
-                        ),
-                      ),
-                      const SizedBox(
-                        width: 10,
-                      ),
-                      const Text(
-                        '🔒 Locked',
-                        style: TextStyle(
-                          fontWeight:
-                              FontWeight.bold,
-                          color:
-                              Colors.black87,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: Padding(
-              padding:
-                  const EdgeInsets.all(12),
-              child: GridView.builder(
-                itemCount: 64,
-                gridDelegate:
-                    const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 8,
-                  crossAxisSpacing: 4,
-                  mainAxisSpacing: 4,
-                ),
-                itemBuilder:
-                    (
-                  context,
-                  index,
-                ) {
-                  final row =
-                      index ~/ 8;
-
-                  final col =
-                      index % 8;
-
-                  final tile =
-                      board[row][col];
-
-                  final selected =
-                      _isSelected(tile);
-
-                  return GestureDetector(
-                    onTap: () =>
-                        _handleTap(
-                      row,
-                      col,
-                    ),
-                    child:
-                        _buildTile(
-                      tile,
-                      selected,
-                    ),
-                  );
-                },
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
