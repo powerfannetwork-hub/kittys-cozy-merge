@@ -506,3 +506,227 @@ class _GameScreenState extends State<GameScreen> {
     if (loading) {
       return const Scaffold(
         body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    if (!canPlay) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(
+            'Level ${widget.level}',
+          ),
+        ),
+        body: const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          'Level ${widget.level}',
+        ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(
+              right: 16,
+            ),
+            child: Center(
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.favorite,
+                    color: Colors.red,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    _formatLives(),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Score: $score',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      'Moves: $moves',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                LinearProgressIndicator(
+                  value: (score / targetScore).clamp(
+                    0.0,
+                    1.0,
+                  ),
+                ),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.orange,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Mission: ${mission.title}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Progress: $missionProgress / ${mission.target}',
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 6),
+                const SizedBox(height: 6),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Target: $targetScore',
+                    ),
+                    if (hasIce)...[
+                      const SizedBox(
+                        width: 10,
+                      ),
+                      const Text(
+                        '•',
+                        style: TextStyle(
+                          color: Colors.grey,
+                        ),
+                      ),
+                      const SizedBox(
+                        width: 10,
+                      ),
+                      const Text(
+                        '🧊 Ice',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue,
+                        ),
+                      ),
+                    ],
+                    if (hasBlock)...[
+                      const SizedBox(
+                        width: 10,
+                      ),
+                      const Text(
+                        '•',
+                        style: TextStyle(
+                          color: Colors.grey,
+                        ),
+                      ),
+                      const SizedBox(
+                        width: 10,
+                      ),
+                      const Text(
+                        '🧱 Block',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.brown,
+                        ),
+                      ),
+                    ],
+                    if (hasLockedTile)...[
+                      const SizedBox(
+                        width: 10,
+                      ),
+                      const Text(
+                        '•',
+                        style: TextStyle(
+                          color: Colors.grey,
+                        ),
+                      ),
+                      const SizedBox(
+                        width: 10,
+                      ),
+                      const Text(
+                        '🔒 Locked',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: GridView.builder(
+                itemCount: 64,
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 8,
+                  crossAxisSpacing: 4,
+                  mainAxisSpacing: 4,
+                ),
+                itemBuilder: (
+                  context,
+                  index,
+                ) {
+                  final row = index ~/ 8;
+
+                  final col = index % 8;
+
+                  final tile = board[row][col];
+
+                  final selected = _isSelected(tile);
+
+                  return GestureDetector(
+                    onTap: () => _handleTap(
+                      row,
+                      col,
+                    ),
+                    child: _buildTile(
+                      tile,
+                      selected,
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
