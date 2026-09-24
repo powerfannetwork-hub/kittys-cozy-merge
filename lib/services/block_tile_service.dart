@@ -1,4 +1,4 @@
-class BlockTileService {
+class LevelBlockService {
   /// Returns the initial HP of a Block for the given level.
   static int getBlockHp(int level) {
     if (level < 60) {
