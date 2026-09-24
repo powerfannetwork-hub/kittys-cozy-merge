@@ -6,6 +6,20 @@ import 'level_block_service.dart';
 import 'level_locked_tile_service.dart';
 import 'level_obstacle_service.dart';
 
+class BoardProcessResult {
+  final int score;
+  final int iceBroken;
+  final int blocksBroken;
+  final int lockedTilesBroken;
+
+  const BoardProcessResult({
+    required this.score,
+    required this.iceBroken,
+    required this.blocksBroken,
+    required this.lockedTilesBroken,
+  });
+}
+
 class BoardService {
   static const int rows = 8;
   static const int columns = 8;
@@ -399,11 +413,12 @@ class BoardService {
     return neighbors;
   }
 
-  static void damageAdjacentIce(
+  static int damageAdjacentIce(
     List<List<GemTile>> board,
     List<GemTile> matches,
   ) {
     final iceToDamage = <GemTile>{};
+    int brokenCount = 0;
 
     for (final matchedTile in matches) {
       for (final neighbor
@@ -422,15 +437,19 @@ class BoardService {
         ice.iceHp = 0;
         ice.isObstacle = false;
         ice.isMatched = true;
+        brokenCount++;
       }
     }
+
+    return brokenCount;
   }
 
-  static void damageAdjacentBlocks(
+  static int damageAdjacentBlocks(
     List<List<GemTile>> board,
     List<GemTile> matches,
   ) {
     final blocksToDamage = <GemTile>{};
+    int brokenCount = 0;
 
     for (final matchedTile in matches) {
       for (final neighbor
@@ -449,15 +468,19 @@ class BoardService {
         block.blockHp = 0;
         block.isObstacle = false;
         block.isMatched = true;
+        brokenCount++;
       }
     }
+
+    return brokenCount;
   }
 
-  static void damageAdjacentLockedTiles(
+  static int damageAdjacentLockedTiles(
     List<List<GemTile>> board,
     List<GemTile> matches,
   ) {
     final lockedTilesToDamage = <GemTile>{};
+    int brokenCount = 0;
 
     for (final matchedTile in matches) {
       for (final neighbor
@@ -477,8 +500,11 @@ class BoardService {
         lockedTile.lockedHp = 0;
         lockedTile.isObstacle = false;
         lockedTile.isMatched = true;
+        brokenCount++;
       }
     }
+
+    return brokenCount;
   }
 
   static void removeMatches(
@@ -566,10 +592,13 @@ class BoardService {
     }
   }
 
-  static int processBoard(
+  static BoardProcessResult processBoard(
     List<List<GemTile>> board,
   ) {
     int totalScore = 0;
+    int totalIceBroken = 0;
+    int totalBlocksBroken = 0;
+    int totalLockedTilesBroken = 0;
 
     while (true) {
       final matches =
@@ -582,17 +611,20 @@ class BoardService {
       totalScore +=
           calculateScore(matches);
 
-      damageAdjacentIce(
+      totalIceBroken +=
+          damageAdjacentIce(
         board,
         matches,
       );
 
-      damageAdjacentBlocks(
+      totalBlocksBroken +=
+          damageAdjacentBlocks(
         board,
         matches,
       );
 
-      damageAdjacentLockedTiles(
+      totalLockedTilesBroken +=
+          damageAdjacentLockedTiles(
         board,
         matches,
       );
@@ -606,6 +638,12 @@ class BoardService {
       refillBoard(board);
     }
 
-    return totalScore;
+    return BoardProcessResult(
+      score: totalScore,
+      iceBroken: totalIceBroken,
+      blocksBroken: totalBlocksBroken,
+      lockedTilesBroken:
+          totalLockedTilesBroken,
+    );
   }
 }
