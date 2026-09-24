@@ -108,7 +108,7 @@ class _GameScreenState extends State<GameScreen> {
     await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: () => const NoLivesScreen(),
+        builder: (_) => const NoLivesScreen(),
       ),
     );
 
@@ -126,7 +126,7 @@ class _GameScreenState extends State<GameScreen> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: () => WinScreen(
+          builder: (_) => WinScreen(
             level: widget.level,
             score: score,
           ),
