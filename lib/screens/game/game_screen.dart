@@ -34,6 +34,7 @@ class _GameScreenState extends State<GameScreen> {
   bool loading = true;
   bool canPlay = false;
   bool unlimitedLives = false;
+
   late MissionData mission;
   int missionProgress = 0;
 
@@ -60,9 +61,11 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   Future<void> _prepareGame() async {
-    final currentLives = await LivesService.refreshLives();
+    final currentLives =
+        await LivesService.refreshLives();
 
-    final unlimited = await LivesService.isUnlimitedLives();
+    final unlimited =
+        await LivesService.isUnlimitedLives();
 
     if (!mounted) return;
 
@@ -71,7 +74,8 @@ class _GameScreenState extends State<GameScreen> {
       unlimitedLives = unlimited;
     });
 
-    final allowed = await LivesService.useLife();
+    final allowed =
+        await LivesService.useLife();
 
     if (!mounted) return;
 
@@ -85,7 +89,8 @@ class _GameScreenState extends State<GameScreen> {
       return;
     }
 
-    final actualLives = await LivesService.getLives();
+    final actualLives =
+        await LivesService.getLives();
 
     if (!mounted) return;
 
@@ -98,6 +103,7 @@ class _GameScreenState extends State<GameScreen> {
       board = BoardService.createBoard(
         level: widget.level,
       );
+
       mission = MissionFactory.create(
         widget.level,
       );
@@ -157,7 +163,8 @@ class _GameScreenState extends State<GameScreen> {
       return;
     }
 
-    final tappedTile = board[row][column];
+    final tappedTile =
+        board[row][column];
 
     if (tappedTile.isObstacle) {
       setState(() {
@@ -183,7 +190,8 @@ class _GameScreenState extends State<GameScreen> {
       return;
     }
 
-    if (tappedTile.isObstacle || selectedTile!.isObstacle) {
+    if (tappedTile.isObstacle ||
+        selectedTile!.isObstacle) {
       setState(() {
         selectedTile = null;
       });
@@ -202,14 +210,16 @@ class _GameScreenState extends State<GameScreen> {
       return;
     }
 
-    final success = BoardService.trySwap(
+    final success =
+        BoardService.trySwap(
       board,
       selectedTile!,
       tappedTile,
     );
 
     if (success) {
-      final gainedScore = BoardService.processBoard(
+      final gainedScore =
+          BoardService.processBoard(
         board,
       );
 
@@ -269,14 +279,18 @@ class _GameScreenState extends State<GameScreen> {
       ),
       decoration: BoxDecoration(
         color: Colors.lightBlue.shade100,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius:
+            BorderRadius.circular(12),
         border: Border.all(
-          color: hp <= 1? Colors.blue.shade700 : Colors.lightBlue.shade300,
+          color: hp <= 1
+              ? Colors.blue.shade700
+              : Colors.lightBlue.shade300,
           width: 2,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.blue.withOpacity(0.25),
+            color:
+                Colors.blue.withOpacity(0.25),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -332,14 +346,18 @@ class _GameScreenState extends State<GameScreen> {
       ),
       decoration: BoxDecoration(
         color: Colors.brown.shade400,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius:
+            BorderRadius.circular(12),
         border: Border.all(
-          color: hp <= 1? Colors.brown.shade900 : Colors.brown.shade600,
+          color: hp <= 1
+              ? Colors.brown.shade900
+              : Colors.brown.shade600,
           width: 2,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.brown.withOpacity(0.30),
+            color:
+                Colors.brown.withOpacity(0.30),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -395,14 +413,18 @@ class _GameScreenState extends State<GameScreen> {
       ),
       decoration: BoxDecoration(
         color: Colors.grey.shade700,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius:
+            BorderRadius.circular(12),
         border: Border.all(
-          color: hp <= 1? Colors.black : Colors.grey.shade500,
+          color: hp <= 1
+              ? Colors.black
+              : Colors.grey.shade500,
           width: 2,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.30),
+            color:
+                Colors.black.withOpacity(0.30),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -452,15 +474,21 @@ class _GameScreenState extends State<GameScreen> {
         milliseconds: 150,
       ),
       decoration: BoxDecoration(
-        color: selected? Colors.amber : Colors.white,
+        color: selected
+            ? Colors.amber
+            : Colors.white,
         border: Border.all(
-          color: selected? Colors.orange : Colors.transparent,
+          color: selected
+              ? Colors.orange
+              : Colors.transparent,
           width: 3,
         ),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius:
+            BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color:
+                Colors.black.withOpacity(0.04),
             blurRadius: 3,
             offset: const Offset(0, 1),
           ),
@@ -531,7 +559,8 @@ class _GameScreenState extends State<GameScreen> {
         ),
         actions: [
           Padding(
-            padding: const EdgeInsets.only(
+            padding:
+                const EdgeInsets.only(
               right: 16,
             ),
             child: Center(
@@ -546,7 +575,8 @@ class _GameScreenState extends State<GameScreen> {
                   Text(
                     _formatLives(),
                     style: const TextStyle(
-                      fontWeight: FontWeight.bold,
+                      fontWeight:
+                          FontWeight.bold,
                     ),
                   ),
                 ],
@@ -558,52 +588,66 @@ class _GameScreenState extends State<GameScreen> {
       body: Column(
         children: [
           Container(
-            padding: const EdgeInsets.all(16),
+            padding:
+                const EdgeInsets.all(16),
             child: Column(
               children: [
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisAlignment:
+                      MainAxisAlignment
+                          .spaceBetween,
                   children: [
                     Text(
                       'Score: $score',
-                      style: const TextStyle(
+                      style:
+                          const TextStyle(
                         fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                        fontWeight:
+                            FontWeight.bold,
                       ),
                     ),
                     Text(
                       'Moves: $moves',
-                      style: const TextStyle(
+                      style:
+                          const TextStyle(
                         fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                        fontWeight:
+                            FontWeight.bold,
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 10),
                 LinearProgressIndicator(
-                  value: (score / targetScore).clamp(
+                  value:
+                      (score /
+                              targetScore)
+                          .clamp(
                     0.0,
                     1.0,
                   ),
                 ),
+
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: Colors.orange.shade50,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius:
+                        BorderRadius.circular(12),
                     border: Border.all(
                       color: Colors.orange,
                     ),
                   ),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment:
+                        CrossAxisAlignment.start,
                     children: [
                       Text(
                         'Mission: ${mission.title}',
                         style: const TextStyle(
-                          fontWeight: FontWeight.bold,
+                          fontWeight:
+                              FontWeight.bold,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -613,15 +657,18 @@ class _GameScreenState extends State<GameScreen> {
                     ],
                   ),
                 ),
+
                 const SizedBox(height: 6),
-                const SizedBox(height: 6),
+
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisAlignment:
+                      MainAxisAlignment
+                          .center,
                   children: [
                     Text(
                       'Target: $targetScore',
                     ),
-                    if (hasIce)...[
+                    if (hasIce) ...[
                       const SizedBox(
                         width: 10,
                       ),
@@ -637,12 +684,14 @@ class _GameScreenState extends State<GameScreen> {
                       const Text(
                         '🧊 Ice',
                         style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.blue,
+                          fontWeight:
+                              FontWeight.bold,
+                          color:
+                              Colors.blue,
                         ),
                       ),
                     ],
-                    if (hasBlock)...[
+                    if (hasBlock) ...[
                       const SizedBox(
                         width: 10,
                       ),
@@ -658,12 +707,14 @@ class _GameScreenState extends State<GameScreen> {
                       const Text(
                         '🧱 Block',
                         style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.brown,
+                          fontWeight:
+                              FontWeight.bold,
+                          color:
+                              Colors.brown,
                         ),
                       ),
                     ],
-                    if (hasLockedTile)...[
+                    if (hasLockedTile) ...[
                       const SizedBox(
                         width: 10,
                       ),
@@ -679,8 +730,10 @@ class _GameScreenState extends State<GameScreen> {
                       const Text(
                         '🔒 Locked',
                         style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
+                          fontWeight:
+                              FontWeight.bold,
+                          color:
+                              Colors.black87,
                         ),
                       ),
                     ],
@@ -691,32 +744,41 @@ class _GameScreenState extends State<GameScreen> {
           ),
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.all(12),
+              padding:
+                  const EdgeInsets.all(12),
               child: GridView.builder(
                 itemCount: 64,
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                gridDelegate:
+                    const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 8,
                   crossAxisSpacing: 4,
                   mainAxisSpacing: 4,
                 ),
-                itemBuilder: (
+                itemBuilder:
+                    (
                   context,
                   index,
                 ) {
-                  final row = index ~/ 8;
+                  final row =
+                      index ~/ 8;
 
-                  final col = index % 8;
+                  final col =
+                      index % 8;
 
-                  final tile = board[row][col];
+                  final tile =
+                      board[row][col];
 
-                  final selected = _isSelected(tile);
+                  final selected =
+                      _isSelected(tile);
 
                   return GestureDetector(
-                    onTap: () => _handleTap(
+                    onTap: () =>
+                        _handleTap(
                       row,
                       col,
                     ),
-                    child: _buildTile(
+                    child:
+                        _buildTile(
                       tile,
                       selected,
                     ),
