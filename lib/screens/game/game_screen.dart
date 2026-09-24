@@ -99,6 +99,7 @@ class _GameScreenState extends State<GameScreen> {
       unlimitedLives = unlimited;
       loading = false;
       canPlay = true;
+      missionProgress = 0;
 
       board = BoardService.createBoard(
         level: widget.level,
@@ -127,19 +128,49 @@ class _GameScreenState extends State<GameScreen> {
     await _prepareGame();
   }
 
-  void _checkGameState() {
-    if (score >= targetScore) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => WinScreen(
-            level: widget.level,
-            score: score,
-          ),
-        ),
-      );
+  bool _isMissionComplete() {
+    return missionProgress >= mission.target;
+  }
 
-      return;
+  bool _isScoreMission() {
+    return mission.title == 'Reach Target Score';
+  }
+
+  void _checkGameState() {
+    final missionComplete =
+        _isMissionComplete();
+
+    final scoreGoalComplete =
+        score >= targetScore;
+
+    if (_isScoreMission()) {
+      if (scoreGoalComplete) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => WinScreen(
+              level: widget.level,
+              score: score,
+            ),
+          ),
+        );
+
+        return;
+      }
+    } else {
+      if (missionComplete) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => WinScreen(
+              level: widget.level,
+              score: score,
+            ),
+          ),
+        );
+
+        return;
+      }
     }
 
     if (moves <= 0) {
@@ -152,6 +183,41 @@ class _GameScreenState extends State<GameScreen> {
           ),
         ),
       );
+    }
+  }
+
+  void _updateMissionProgress(
+    BoardProcessResult result,
+  ) {
+    if (_isScoreMission()) {
+      return;
+    }
+
+    int progressIncrease = 0;
+
+    switch (mission.title) {
+      case 'Break Ice':
+        progressIncrease = result.iceBroken;
+        break;
+
+      case 'Break Blocks':
+        progressIncrease = result.blocksBroken;
+        break;
+
+      case 'Break Locked Tiles':
+        progressIncrease =
+            result.lockedTilesBroken;
+        break;
+    }
+
+    if (progressIncrease <= 0) {
+      return;
+    }
+
+    missionProgress += progressIncrease;
+
+    if (missionProgress > mission.target) {
+      missionProgress = mission.target;
     }
   }
 
@@ -218,13 +284,15 @@ class _GameScreenState extends State<GameScreen> {
     );
 
     if (success) {
-      final gainedScore =
+      final result =
           BoardService.processBoard(
         board,
       );
 
+      _updateMissionProgress(result);
+
       setState(() {
-        score += gainedScore;
+        score += result.score;
         moves--;
         selectedTile = null;
       });
@@ -627,7 +695,6 @@ class _GameScreenState extends State<GameScreen> {
                     1.0,
                   ),
                 ),
-
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(10),
@@ -657,13 +724,10 @@ class _GameScreenState extends State<GameScreen> {
                     ],
                   ),
                 ),
-
                 const SizedBox(height: 6),
-
                 Row(
                   mainAxisAlignment:
-                      MainAxisAlignment
-                          .center,
+                      MainAxisAlignment.center,
                   children: [
                     Text(
                       'Target: $targetScore',
