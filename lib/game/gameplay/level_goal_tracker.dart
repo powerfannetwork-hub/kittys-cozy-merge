@@ -4,14 +4,11 @@ import '../../models/gem_type.dart';
 import '../../models/level_config.dart';
 import '../../models/level_goal.dart';
 
-@immutable
 class LevelGoalTracker {
   LevelGoalTracker({
     required LevelConfig level,
-  }) : _level = level,
-       _goals = List<LevelGoal>.unmodifiable(
-         level.goals,
-       ) {
+  })  : _level = level,
+        _goals = List<LevelGoal>.from(level.goals) {
     if (!level.isValid) {
       throw ArgumentError(
         'The supplied level configuration is invalid.',
@@ -49,7 +46,7 @@ class LevelGoalTracker {
       return 1.0;
     }
 
-    double total = 0;
+    double total = 0.0;
 
     for (final goal in _goals) {
       total += goal.progress;
