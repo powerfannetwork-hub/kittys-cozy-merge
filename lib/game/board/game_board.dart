@@ -1,4 +1,5 @@
-import '../../models/gem_type.dart';
+import 'package:flutter/foundation.dart';
+
 import '../gems/gem.dart';
 import 'board_cell.dart';
 import 'board_position.dart';
@@ -40,6 +41,10 @@ class GameBoard {
     return _cells[position.row][position.column];
   }
 
+  Gem? gemAt(BoardPosition position) {
+    return cellAt(position).gem;
+  }
+
   void setCell(BoardCell cell) {
     if (!isInside(cell.position)) {
       throw RangeError(
@@ -56,16 +61,21 @@ class GameBoard {
   ) {
     final cell = cellAt(position);
 
+    final updatedGem = gem?.copyWith(
+      position: position,
+    );
+
     setCell(
       cell.copyWith(
-        gemType: gem?.type,
-        clearGem: gem == null,
+        gem: updatedGem,
+        clearGem: updatedGem == null,
       ),
     );
   }
 
-  GemType? gemTypeAt(BoardPosition position) {
-    return cellAt(position).gemType;
+  void removeGem(BoardPosition position) {
+    final cell = cellAt(position);
+    setCell(cell.removeGem());
   }
 
   bool canMoveTo(BoardPosition position) {
@@ -102,6 +112,12 @@ class GameBoard {
     BoardPosition first,
     BoardPosition second,
   ) {
+    if (!isInside(first) || !isInside(second)) {
+      throw RangeError(
+        'Cannot swap positions outside the board.',
+      );
+    }
+
     if (!first.isAdjacentTo(second)) {
       throw ArgumentError(
         'Only adjacent cells can be swapped.',
@@ -111,23 +127,43 @@ class GameBoard {
     final firstCell = cellAt(first);
     final secondCell = cellAt(second);
 
-    final firstGem = firstCell.gemType;
-    final secondGem = secondCell.gemType;
+    final firstGem = firstCell.gem;
+    final secondGem = secondCell.gem;
 
-    setCell(
-      firstCell.copyWith(
-        gemType: secondGem,
-        clearGem: secondGem == null,
-      ),
-    );
-
-    setCell(
-      secondCell.copyWith(
-        gemType: firstGem,
-        clearGem: firstGem == null,
-      ),
-    );
+    setGem(first, secondGem);
+    setGem(second, firstGem);
   }
+
+  void clearGems(Iterable<BoardPosition> positions) {
+    for (final position in positions) {
+      if (isInside(position)) {
+        removeGem(position);
+      }
+    }
+  }
+
+  List<BoardPosition> emptyPositions() {
+    final result = <BoardPosition>[];
+
+    for (int row = 0; row < rows; row++) {
+      for (int column = 0; column < columns; column++) {
+        final position = BoardPosition(
+          row: row,
+          column: column,
+        );
+
+        if (!cellAt(position).hasGem &&
+            cellAt(position).isAvailable) {
+          result.add(position);
+        }
+      }
+    }
+
+    return result;
+  }
+
+  @visibleForTesting
+  List<List<BoardCell>> get mutableCells => _cells;
 
   static List<List<BoardCell>> _createEmptyCells(
     int rows,
