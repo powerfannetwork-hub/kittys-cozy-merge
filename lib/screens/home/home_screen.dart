@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../core/constants/app_constants.dart';
 import '../../services/game_storage_service.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -17,7 +16,6 @@ class HomeScreen extends StatelessWidget {
         child: Stack(
           children: [
             const _BackgroundDecoration(),
-
             SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
               padding: const EdgeInsets.fromLTRB(
@@ -29,9 +27,9 @@ class HomeScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildTopBar(context),
+                  _buildTopBar(),
                   const SizedBox(height: 22),
-                  _buildHeroCard(context),
+                  _buildHeroCard(),
                   const SizedBox(height: 20),
                   _buildResourceRow(),
                   const SizedBox(height: 22),
@@ -43,7 +41,6 @@ class HomeScreen extends StatelessWidget {
                 ],
               ),
             ),
-
             const _BottomNavigationBar(),
           ],
         ),
@@ -51,7 +48,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildTopBar(BuildContext context) {
+  Widget _buildTopBar() {
     return Row(
       children: [
         Container(
@@ -75,10 +72,10 @@ class HomeScreen extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 12),
-        Expanded(
+        const Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
+            children: [
               Text(
                 "Kitty's",
                 style: TextStyle(
@@ -107,7 +104,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildHeroCard(BuildContext context) {
+  Widget _buildHeroCard() {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(
@@ -137,31 +134,13 @@ class HomeScreen extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Expanded(
+          const Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 11,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.78),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Text(
-                    'WELCOME HOME',
-                    style: TextStyle(
-                      fontSize: 10,
-                      letterSpacing: 1.1,
-                      fontWeight: FontWeight.w900,
-                      color: Color(0xFFB2477F),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 14),
-                const Text(
+                _WelcomeBadge(),
+                SizedBox(height: 14),
+                Text(
                   'Let’s make\nsomething cozy!',
                   style: TextStyle(
                     fontSize: 25,
@@ -170,8 +149,8 @@ class HomeScreen extends StatelessWidget {
                     color: Color(0xFF342632),
                   ),
                 ),
-                const SizedBox(height: 9),
-                const Text(
+                SizedBox(height: 9),
+                Text(
                   'Match gems, discover boosters\nand help Kitty build her cozy world.',
                   style: TextStyle(
                     fontSize: 12,
@@ -198,7 +177,7 @@ class HomeScreen extends StatelessWidget {
             icon: Icons.favorite_rounded,
             iconColor: const Color(0xFFFF5E88),
             label: 'Lives',
-            value: '${_storage.lives}/${AppConstants.maximumLives}',
+            value: '${_storage.lives}/5',
           ),
         ),
         const SizedBox(width: 12),
@@ -354,7 +333,7 @@ class HomeScreen extends StatelessWidget {
             width: 55,
             height: 55,
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.72),
+              color: Colors.white.withOpacity(0.72),
               shape: BoxShape.circle,
             ),
             child: const Icon(
@@ -485,9 +464,36 @@ class HomeScreen extends StatelessWidget {
           height: 48,
           child: Icon(
             icon,
-            color: const Color(0xFF705C69),
+            color: Color(0xFF705C69),
             size: 23,
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _WelcomeBadge extends StatelessWidget {
+  const _WelcomeBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 11,
+        vertical: 6,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.78),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: const Text(
+        'WELCOME HOME',
+        style: TextStyle(
+          fontSize: 10,
+          letterSpacing: 1.1,
+          fontWeight: FontWeight.w900,
+          color: Color(0xFFB2477F),
         ),
       ),
     );
@@ -533,7 +539,7 @@ class _BackgroundDecoration extends StatelessWidget {
 }
 
 class _CatCharacter extends StatelessWidget {
-  const _CatCharacter();
+  _CatCharacter();
 
   @override
   Widget build(BuildContext context) {
@@ -541,7 +547,7 @@ class _CatCharacter extends StatelessWidget {
       width: 112,
       height: 145,
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.58),
+        color: Colors.white.withOpacity(0.58),
         borderRadius: BorderRadius.circular(55),
       ),
       child: Stack(
@@ -614,7 +620,7 @@ class _ResourceCard extends StatelessWidget {
             width: 43,
             height: 43,
             decoration: BoxDecoration(
-              color: iconColor.withValues(alpha: 0.12),
+              color: iconColor.withOpacity(0.12),
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -691,7 +697,7 @@ class _FeatureCard extends StatelessWidget {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
+              color: color.withOpacity(0.12),
               shape: BoxShape.circle,
             ),
             child: Icon(
