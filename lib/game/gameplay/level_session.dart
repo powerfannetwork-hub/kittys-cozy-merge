@@ -1,12 +1,13 @@
+import '../../models/gem_type.dart';
 import '../../models/level_config.dart';
 import '../../models/level_goal.dart';
 import '../../services/level_repository.dart';
 import '../board/game_board.dart';
 import 'board_generator.dart';
+import 'game_engine.dart';
 import 'gem_swap.dart';
 import 'level_goal_tracker.dart';
 import 'move_result.dart';
-import 'game_engine.dart';
 
 class LevelSession {
   LevelSession._({
@@ -129,15 +130,11 @@ class LevelSession {
 
   LevelGoal? goalForType(
     LevelGoalType type, {
-    Object? gemType,
+    GemType? gemType,
   }) {
-    if (gemType == null) {
-      return _goalTracker.goalForType(type);
-    }
-
-    throw ArgumentError(
-      'gemType must use GemType when querying '
-      'a collect-gem goal.',
+    return _goalTracker.goalForType(
+      type,
+      gemType: gemType,
     );
   }
 
