@@ -86,6 +86,36 @@ class GameEngine {
       swap.to,
     );
 
+    /*
+     * Special gems can activate directly after a swap.
+     *
+     * This is important because a special + special
+     * combination does not need to create a normal
+     * 3-match before it activates.
+     */
+    if (firstGem.isSpecial ||
+        secondGem.isSpecial) {
+      _movesRemaining--;
+
+      final resolution =
+          _resolveSpecialSwap(
+        firstPosition: swap.to,
+        secondPosition: swap.from,
+      );
+
+      return SwapResult(
+        status: SwapStatus.successful,
+        from: swap.from,
+        to: swap.to,
+        matchedPositions:
+            resolution.matchedPositions,
+        cascadeCount:
+            resolution.cascadeCount,
+        scoreGained:
+            resolution.scoreGained,
+      );
+    }
+
     final initialMatch =
         _matchDetector.findMatches(_board);
 
@@ -137,6 +167,206 @@ class GameEngine {
           result.cascadeCount,
       scoreGained:
           result.scoreGained,
+    );
+  }
+
+  _ResolutionResult _resolveSpecialSwap({
+    required BoardPosition firstPosition,
+    required BoardPosition secondPosition,
+  }) {
+    final firstGem =
+        _board.gemAt(firstPosition);
+
+    final secondGem =
+        _board.gemAt(secondPosition);
+
+    if (firstGem == null ||
+        secondGem == null) {
+      return const _ResolutionResult(
+        matchedPositions: <BoardPosition>{},
+        cascadeCount: 0,
+        scoreGained: 0,
+      );
+    }
+
+    final matchedPositions =
+        <BoardPosition>{};
+
+    int scoreGained = 0;
+
+    /*
+     * Color Bomb + Color Bomb
+     *
+     * Clears the entire board.
+     */
+    if (firstGem.specialType ==
+            GemSpecialType.colorBomb &&
+        secondGem.specialType ==
+            GemSpecialType.colorBomb) {
+      final positions =
+          _allAvailableGemPositions();
+
+      matchedPositions.addAll(positions);
+
+      scoreGained +=
+          _clearPositions(positions);
+
+      return _finishSpecialResolution(
+        matchedPositions: matchedPositions,
+        scoreGained: scoreGained,
+      );
+    }
+
+    /*
+     * Color Bomb + another special
+     */
+    if (firstGem.specialType ==
+            GemSpecialType.colorBomb ||
+        secondGem.specialType ==
+            GemSpecialType.colorBomb) {
+      final colorBomb =
+          firstGem.specialType ==
+                  GemSpecialType.colorBomb
+              ? firstGem
+              : secondGem;
+
+      final otherGem =
+          identical(colorBomb, firstGem)
+              ? secondGem
+              : firstGem;
+
+      final positions =
+          _activateColorBombWithSpecial(
+        colorBomb: colorBomb,
+        special: otherGem,
+      );
+
+      matchedPositions.addAll(positions);
+
+      scoreGained +=
+          _clearPositions(positions);
+
+      return _finishSpecialResolution(
+        matchedPositions: matchedPositions,
+        scoreGained: scoreGained,
+      );
+    }
+
+    /*
+     * Rocket + Rocket
+     */
+    if (_isRocket(firstGem) &&
+        _isRocket(secondGem)) {
+      final positions =
+          _rocketPlusRocketPositions(
+        firstPosition,
+        secondPosition,
+      );
+
+      matchedPositions.addAll(positions);
+
+      scoreGained +=
+          _clearPositions(positions);
+
+      return _finishSpecialResolution(
+        matchedPositions: matchedPositions,
+        scoreGained: scoreGained,
+      );
+    }
+
+    /*
+     * Bomb + Bomb
+     */
+    if (firstGem.specialType ==
+            GemSpecialType.bomb &&
+        secondGem.specialType ==
+            GemSpecialType.bomb) {
+      final positions =
+          _bombPlusBombPositions(
+        firstPosition,
+        secondPosition,
+      );
+
+      matchedPositions.addAll(positions);
+
+      scoreGained +=
+          _clearPositions(positions);
+
+      return _finishSpecialResolution(
+        matchedPositions: matchedPositions,
+        scoreGained: scoreGained,
+      );
+    }
+
+    /*
+     * Rocket + Bomb
+     */
+    if ((_isRocket(firstGem) &&
+            secondGem.specialType ==
+                GemSpecialType.bomb) ||
+        (_isRocket(secondGem) &&
+            firstGem.specialType ==
+                GemSpecialType.bomb)) {
+      final rocket =
+          _isRocket(firstGem)
+              ? firstGem
+              : secondGem;
+
+      final rocketPosition =
+          identical(rocket, firstGem)
+              ? firstPosition
+              : secondPosition;
+
+      final positions =
+          _rocketPlusBombPositions(
+        rocketPosition,
+        rocket.specialType,
+      );
+
+      matchedPositions.addAll(positions);
+
+      scoreGained +=
+          _clearPositions(positions);
+
+      return _finishSpecialResolution(
+        matchedPositions: matchedPositions,
+        scoreGained: scoreGained,
+      );
+    }
+
+    /*
+     * Special + normal gem
+     */
+    final specialGem =
+        firstGem.isSpecial
+            ? firstGem
+            : secondGem;
+
+    final specialPosition =
+        firstGem.isSpecial
+            ? firstPosition
+            : secondPosition;
+
+    final targetGem =
+        firstGem.isSpecial
+            ? secondGem
+            : firstGem;
+
+    final positions =
+        _activateSpecial(
+      position: specialPosition,
+      specialGem: specialGem,
+      targetType: targetGem.type,
+    );
+
+    matchedPositions.addAll(positions);
+
+    scoreGained +=
+        _clearPositions(positions);
+
+    return _finishSpecialResolution(
+      matchedPositions: matchedPositions,
+      scoreGained: scoreGained,
     );
   }
 
@@ -196,7 +426,8 @@ class GameEngine {
         );
 
         for (final position in matchedPositions) {
-          if (position != specialCreation.position) {
+          if (position !=
+              specialCreation.position) {
             _removeGemIfAvailable(position);
           }
         }
@@ -252,7 +483,8 @@ class GameEngine {
     final gemSpecialType =
         _toGemSpecialType(specialType);
 
-    if (gemSpecialType == GemSpecialType.normal) {
+    if (gemSpecialType ==
+        GemSpecialType.normal) {
       return null;
     }
 
@@ -283,6 +515,439 @@ class GameEngine {
     }
   }
 
+  Set<BoardPosition> _activateSpecial({
+    required BoardPosition position,
+    required Gem specialGem,
+    required GemType targetType,
+  }) {
+    final positions = <BoardPosition>{};
+
+    switch (specialGem.specialType) {
+      case GemSpecialType.normal:
+        positions.add(position);
+        break;
+
+      case GemSpecialType.rocketHorizontal:
+        for (int column = 0;
+            column < _board.columns;
+            column++) {
+          positions.add(
+            BoardPosition(
+              row: position.row,
+              column: column,
+            ),
+          );
+        }
+        break;
+
+      case GemSpecialType.rocketVertical:
+        for (int row = 0;
+            row < _board.rows;
+            row++) {
+          positions.add(
+            BoardPosition(
+              row: row,
+              column: position.column,
+            ),
+          );
+        }
+        break;
+
+      case GemSpecialType.bomb:
+        positions.addAll(
+          _areaPositions(
+            center: position,
+            radius: 1,
+          ),
+        );
+        break;
+
+      case GemSpecialType.colorBomb:
+        for (int row = 0;
+            row < _board.rows;
+            row++) {
+          for (int column = 0;
+              column < _board.columns;
+              column++) {
+            final currentPosition =
+                BoardPosition(
+              row: row,
+              column: column,
+            );
+
+            final gem =
+                _board.gemAt(
+              currentPosition,
+            );
+
+            if (gem?.type == targetType) {
+              positions.add(
+                currentPosition,
+              );
+            }
+          }
+        }
+
+        positions.add(position);
+        break;
+    }
+
+    return positions;
+  }
+
+  Set<BoardPosition>
+      _activateColorBombWithSpecial({
+    required Gem colorBomb,
+    required Gem special,
+  }) {
+    final positions = <BoardPosition>{};
+
+    final targetType = special.type;
+
+    for (int row = 0;
+        row < _board.rows;
+        row++) {
+      for (int column = 0;
+          column < _board.columns;
+          column++) {
+        final position =
+            BoardPosition(
+          row: row,
+          column: column,
+        );
+
+        final gem =
+            _board.gemAt(position);
+
+        if (gem?.type == targetType) {
+          positions.add(position);
+
+          if (_isRocket(gem)) {
+            positions.addAll(
+              _rocketPositions(
+                position,
+                gem!.specialType,
+              ),
+            );
+          } else if (gem?.specialType ==
+              GemSpecialType.bomb) {
+            positions.addAll(
+              _areaPositions(
+                center: position,
+                radius: 1,
+              ),
+            );
+          }
+        }
+      }
+    }
+
+    return positions;
+  }
+
+  Set<BoardPosition> _rocketPlusRocketPositions(
+    BoardPosition first,
+    BoardPosition second,
+  ) {
+    final positions = <BoardPosition>{};
+
+    for (int column = 0;
+        column < _board.columns;
+        column++) {
+      positions.add(
+        BoardPosition(
+          row: first.row,
+          column: column,
+        ),
+      );
+
+      positions.add(
+        BoardPosition(
+          row: second.row,
+          column: column,
+        ),
+      );
+    }
+
+    for (int row = 0;
+        row < _board.rows;
+        row++) {
+      positions.add(
+        BoardPosition(
+          row: row,
+          column: first.column,
+        ),
+      );
+
+      positions.add(
+        BoardPosition(
+          row: row,
+          column: second.column,
+        ),
+      );
+    }
+
+    return positions;
+  }
+
+  Set<BoardPosition> _rocketPlusBombPositions(
+    BoardPosition rocketPosition,
+    GemSpecialType rocketType,
+  ) {
+    final positions = <BoardPosition>{};
+
+    for (int offset = -1; offset <= 1; offset++) {
+      final row =
+          rocketPosition.row + offset;
+
+      final column =
+          rocketPosition.column + offset;
+
+      if (row >= 0 &&
+          row < _board.rows) {
+        for (int currentColumn = 0;
+            currentColumn < _board.columns;
+            currentColumn++) {
+          positions.add(
+            BoardPosition(
+              row: row,
+              column: currentColumn,
+            ),
+          );
+        }
+      }
+
+      if (column >= 0 &&
+          column < _board.columns) {
+        for (int currentRow = 0;
+            currentRow < _board.rows;
+            currentRow++) {
+          positions.add(
+            BoardPosition(
+              row: currentRow,
+              column: column,
+            ),
+          );
+        }
+      }
+    }
+
+    if (rocketType ==
+        GemSpecialType.rocketHorizontal) {
+      positions.addAll(
+        _areaPositions(
+          center: rocketPosition,
+          radius: 1,
+        ),
+      );
+    }
+
+    if (rocketType ==
+        GemSpecialType.rocketVertical) {
+      positions.addAll(
+        _areaPositions(
+          center: rocketPosition,
+          radius: 1,
+        ),
+      );
+    }
+
+    return positions;
+  }
+
+  Set<BoardPosition> _bombPlusBombPositions(
+    BoardPosition first,
+    BoardPosition second,
+  ) {
+    final positions = <BoardPosition>{};
+
+    positions.addAll(
+      _areaPositions(
+        center: first,
+        radius: 2,
+      ),
+    );
+
+    positions.addAll(
+      _areaPositions(
+        center: second,
+        radius: 2,
+      ),
+    );
+
+    return positions;
+  }
+
+  Set<BoardPosition> _rocketPositions(
+    BoardPosition position,
+    GemSpecialType type,
+  ) {
+    final positions = <BoardPosition>{};
+
+    if (type ==
+        GemSpecialType.rocketHorizontal) {
+      for (int column = 0;
+          column < _board.columns;
+          column++) {
+        positions.add(
+          BoardPosition(
+            row: position.row,
+            column: column,
+          ),
+        );
+      }
+    }
+
+    if (type ==
+        GemSpecialType.rocketVertical) {
+      for (int row = 0;
+          row < _board.rows;
+          row++) {
+        positions.add(
+          BoardPosition(
+            row: row,
+            column: position.column,
+          ),
+        );
+      }
+    }
+
+    return positions;
+  }
+
+  Set<BoardPosition> _areaPositions({
+    required BoardPosition center,
+    required int radius,
+  }) {
+    final positions = <BoardPosition>{};
+
+    for (int rowOffset = -radius;
+        rowOffset <= radius;
+        rowOffset++) {
+      for (int columnOffset = -radius;
+          columnOffset <= radius;
+          columnOffset++) {
+        final row =
+            center.row + rowOffset;
+
+        final column =
+            center.column + columnOffset;
+
+        if (row < 0 ||
+            row >= _board.rows ||
+            column < 0 ||
+            column >= _board.columns) {
+          continue;
+        }
+
+        positions.add(
+          BoardPosition(
+            row: row,
+            column: column,
+          ),
+        );
+      }
+    }
+
+    return positions;
+  }
+
+  Set<BoardPosition>
+      _allAvailableGemPositions() {
+    final positions = <BoardPosition>{};
+
+    for (int row = 0;
+        row < _board.rows;
+        row++) {
+      for (int column = 0;
+          column < _board.columns;
+          column++) {
+        final position =
+            BoardPosition(
+          row: row,
+          column: column,
+        );
+
+        if (_board.cellAt(position).isAvailable &&
+            _board.gemAt(position) != null) {
+          positions.add(position);
+        }
+      }
+    }
+
+    return positions;
+  }
+
+  int _clearPositions(
+    Set<BoardPosition> positions,
+  ) {
+    int cleared = 0;
+
+    for (final position in positions) {
+      if (!_board.isInside(position)) {
+        continue;
+      }
+
+      final gem =
+          _board.gemAt(position);
+
+      if (gem == null) {
+        continue;
+      }
+
+      final cell =
+          _board.cellAt(position);
+
+      if (!cell.isAvailable) {
+        continue;
+      }
+
+      _board.removeGem(position);
+
+      cleared++;
+    }
+
+    final gained = cleared * 10;
+
+    _score += gained;
+
+    return gained;
+  }
+
+  _ResolutionResult _finishSpecialResolution({
+    required Set<BoardPosition>
+        matchedPositions,
+    required int scoreGained,
+  }) {
+    _board.applyGravity();
+
+    _refillEmptyCells();
+
+    final cascade =
+        _resolveMatches();
+
+    matchedPositions.addAll(
+      cascade.matchedPositions,
+    );
+
+    return _ResolutionResult(
+      matchedPositions:
+          matchedPositions,
+      cascadeCount:
+          1 + cascade.cascadeCount,
+      scoreGained:
+          scoreGained +
+          cascade.scoreGained,
+    );
+  }
+
+  bool _isRocket(Gem gem) {
+    return gem.specialType ==
+            GemSpecialType.rocketHorizontal ||
+        gem.specialType ==
+            GemSpecialType.rocketVertical;
+  }
+
   void _createSpecialGem({
     required BoardPosition position,
     required GemSpecialType type,
@@ -309,7 +974,8 @@ class GameEngine {
       return;
     }
 
-    final cell = _board.cellAt(position);
+    final cell =
+        _board.cellAt(position);
 
     if (cell.isAvailable) {
       _board.removeGem(position);
@@ -413,8 +1079,8 @@ class GameEngine {
         '${position.column}';
   }
 
-  static const List<GemType> _availableGemTypes =
-      <GemType>[
+  static const List<GemType>
+      _availableGemTypes = <GemType>[
     GemType.pink,
     GemType.blue,
     GemType.purple,
