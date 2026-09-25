@@ -21,10 +21,16 @@ class BoardCell {
 
   final ObstacleType obstacleType;
 
+  /// Number of ice layers covering this cell.
+  ///
+  /// Ice is a cover/obstacle layer, not a hard movement block.
+  /// A gem can exist on an ice cell.
   final int iceLayers;
 
+  /// Hard block that prevents gem movement.
   final bool isBlocked;
 
+  /// Locked tile that prevents gem movement until unlocked.
   final bool isLocked;
 
   bool get hasGem => gem != null;
@@ -41,15 +47,17 @@ class BoardCell {
       obstacleType == ObstacleType.lockedTile ||
       isLocked;
 
-  bool get hasObstacle =>
-      obstacleType != ObstacleType.none ||
-      hasBlock ||
-      hasLockedTile;
+  bool get hasHardObstacle =>
+      hasBlock || hasLockedTile;
 
-  bool get isAvailable =>
-      !hasBlock &&
-      !hasLockedTile &&
-      !hasIce;
+  bool get hasObstacle =>
+      hasIce || hasHardObstacle;
+
+  /// Whether a gem can occupy and move through this cell.
+  ///
+  /// Ice does NOT make the cell unavailable.
+  /// Blocks and locked tiles are hard obstacles.
+  bool get isAvailable => !hasHardObstacle;
 
   BoardCell copyWith({
     BoardPosition? position,
@@ -63,14 +71,10 @@ class BoardCell {
     return BoardCell(
       position: position ?? this.position,
       gem: clearGem ? null : (gem ?? this.gem),
-      obstacleType:
-          obstacleType ?? this.obstacleType,
-      iceLayers:
-          iceLayers ?? this.iceLayers,
-      isBlocked:
-          isBlocked ?? this.isBlocked,
-      isLocked:
-          isLocked ?? this.isLocked,
+      obstacleType: obstacleType ?? this.obstacleType,
+      iceLayers: iceLayers ?? this.iceLayers,
+      isBlocked: isBlocked ?? this.isBlocked,
+      isLocked: isLocked ?? this.isLocked,
     );
   }
 
@@ -97,13 +101,10 @@ class BoardCell {
     );
   }
 
-  BoardCell withIce(
-    int layers,
-  ) {
+  BoardCell withIce(int layers) {
     if (layers <= 0) {
       return copyWith(
-        obstacleType:
-            ObstacleType.none,
+        obstacleType: ObstacleType.none,
         iceLayers: 0,
       );
     }
@@ -111,20 +112,25 @@ class BoardCell {
     return copyWith(
       obstacleType: ObstacleType.ice,
       iceLayers: layers,
+      isBlocked: false,
+      isLocked: false,
     );
   }
 
   BoardCell withBlock() {
     return copyWith(
       obstacleType: ObstacleType.block,
+      iceLayers: 0,
       isBlocked: true,
+      isLocked: false,
     );
   }
 
   BoardCell withLockedTile() {
     return copyWith(
-      obstacleType:
-          ObstacleType.lockedTile,
+      obstacleType: ObstacleType.lockedTile,
+      iceLayers: 0,
+      isBlocked: false,
       isLocked: true,
     );
   }
@@ -143,13 +149,11 @@ class BoardCell {
       return this;
     }
 
-    final remainingLayers =
-        iceLayers - 1;
+    final remainingLayers = iceLayers - 1;
 
     if (remainingLayers <= 0) {
       return copyWith(
-        obstacleType:
-            ObstacleType.none,
+        obstacleType: ObstacleType.none,
         iceLayers: 0,
       );
     }
@@ -176,14 +180,10 @@ class BoardCell {
     return other is BoardCell &&
         other.position == position &&
         other.gem == gem &&
-        other.obstacleType ==
-            obstacleType &&
-        other.iceLayers ==
-            iceLayers &&
-        other.isBlocked ==
-            isBlocked &&
-        other.isLocked ==
-            isLocked;
+        other.obstacleType == obstacleType &&
+        other.iceLayers == iceLayers &&
+        other.isBlocked == isBlocked &&
+        other.isLocked == isLocked;
   }
 
   @override
