@@ -55,6 +55,7 @@ class _GemPainter extends CustomPainter {
     }
 
     final Offset center = size.center(Offset.zero);
+
     final double shortestSide = math.min(
       size.width,
       size.height,
@@ -430,7 +431,17 @@ class _GemPainter extends CustomPainter {
     canvas.save();
 
     if (!horizontal) {
-      canvas.rotate(math.pi / 2, center: center);
+      canvas.translate(
+        center.dx,
+        center.dy,
+      );
+
+      canvas.rotate(math.pi / 2);
+
+      canvas.translate(
+        -center.dx,
+        -center.dy,
+      );
     }
 
     final double rocketWidth = radius * 1.05;
@@ -681,14 +692,17 @@ class _GemPainter extends CustomPainter {
         index < sparkColors.length;
         index++) {
       final double angle =
-          (math.pi * 2 / sparkColors.length) * index -
+          (math.pi * 2 / sparkColors.length) *
+                  index -
               math.pi / 2;
 
       final double distance = radius * 0.48;
 
       final Offset sparkCenter = Offset(
-        center.dx + math.cos(angle) * distance,
-        center.dy + math.sin(angle) * distance,
+        center.dx +
+            math.cos(angle) * distance,
+        center.dy +
+            math.sin(angle) * distance,
       );
 
       final Paint sparkPaint = Paint()
@@ -745,14 +759,19 @@ class _GemPainter extends CustomPainter {
     switch (type) {
       case GemType.pink:
         return const Color(0xFFFF5FA2);
+
       case GemType.blue:
         return const Color(0xFF4DA9FF);
+
       case GemType.purple:
         return const Color(0xFF9B6CFF);
+
       case GemType.green:
         return const Color(0xFF52D38A);
+
       case GemType.yellow:
         return const Color(0xFFFFC94A);
+
       case GemType.orange:
         return const Color(0xFFFF9854);
     }
@@ -762,14 +781,19 @@ class _GemPainter extends CustomPainter {
     switch (type) {
       case GemType.pink:
         return const Color(0xFFC62D72);
+
       case GemType.blue:
         return const Color(0xFF2372C4);
+
       case GemType.purple:
         return const Color(0xFF6340B8);
+
       case GemType.green:
         return const Color(0xFF278F5A);
+
       case GemType.yellow:
         return const Color(0xFFD79612);
+
       case GemType.orange:
         return const Color(0xFFD65B22);
     }
@@ -779,26 +803,28 @@ class _GemPainter extends CustomPainter {
     switch (type) {
       case GemType.pink:
         return const Color(0xFFFFB7D3);
+
       case GemType.blue:
         return const Color(0xFFB9E2FF);
+
       case GemType.purple:
         return const Color(0xFFD0B8FF);
+
       case GemType.green:
         return const Color(0xFFB8F2D0);
+
       case GemType.yellow:
         return const Color(0xFFFFF0A8);
+
       case GemType.orange:
         return const Color(0xFFFFD0A6);
     }
   }
 
-  bool get _isRepaintNeeded => true;
-
   @override
   bool shouldRepaint(covariant _GemPainter oldDelegate) {
     return oldDelegate.gem != gem ||
         oldDelegate.selected != selected ||
-        oldDelegate.enabled != enabled ||
-        _isRepaintNeeded;
+        oldDelegate.enabled != enabled;
   }
 }
