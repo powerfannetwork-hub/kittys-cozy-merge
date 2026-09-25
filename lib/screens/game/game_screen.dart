@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../game/board/board_position.dart';
-import '../../game/gems/gem.dart';
 import '../../game/gameplay/gem_swap.dart';
 import '../../game/gameplay/level_session.dart';
-import '../../models/gem_type.dart';
+import '../../game/gems/gem_widget.dart';
 
 class GameScreen extends StatefulWidget {
   const GameScreen({
@@ -310,6 +309,7 @@ class _GameScreenState extends State<GameScreen> {
       _session = LevelSession.create(
         levelNumber: widget.levelNumber,
       );
+
       _dragStart = null;
       _lastDragPosition = null;
       _processingMove = false;
@@ -617,9 +617,11 @@ class _GameScreenState extends State<GameScreen> {
                   ),
                 ),
               if (cell.gem != null)
-                _GemWidget(
+                GemWidget(
                   gem: cell.gem!,
-                  size: cellSize * 0.73,
+                  size: cellSize * 0.82,
+                  selected: selected,
+                  enabled: !_processingMove,
                 ),
             ],
           ),
@@ -916,170 +918,5 @@ class _GameHeaderButton extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-class _GemWidget extends StatelessWidget {
-  const _GemWidget({
-    required this.gem,
-    required this.size,
-  });
-
-  final Gem gem;
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = _gemColors(gem.type);
-
-    final special = gem.specialType;
-
-    return Container(
-      width: size,
-      height: size,
-      padding: EdgeInsets.all(size * 0.08),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(
-          size * 0.25,
-        ),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: colors,
-        ),
-        boxShadow: [
-          BoxShadow(
-            blurRadius: size * 0.13,
-            offset: Offset(
-              0,
-              size * 0.07,
-            ),
-            color: const Color(0x33000000),
-          ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          Positioned(
-            left: size * 0.10,
-            top: size * 0.08,
-            child: Container(
-              width: size * 0.20,
-              height: size * 0.12,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.78),
-                borderRadius:
-                    BorderRadius.circular(20),
-              ),
-            ),
-          ),
-          Center(
-            child: _specialIcon(
-              special,
-              size,
-            ),
-          ),
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius:
-                    BorderRadius.circular(
-                  size * 0.18,
-                ),
-                border: Border.all(
-                  color:
-                      Colors.white.withOpacity(0.45),
-                  width: 1.1,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _specialIcon(
-    GemSpecialType special,
-    double size,
-  ) {
-    switch (special) {
-      case GemSpecialType.normal:
-        return const SizedBox.shrink();
-
-      case GemSpecialType.rocketHorizontal:
-        return Icon(
-          Icons.arrow_forward_rounded,
-          color: Colors.white.withOpacity(0.92),
-          size: size * 0.43,
-        );
-
-      case GemSpecialType.rocketVertical:
-        return Icon(
-          Icons.arrow_upward_rounded,
-          color: Colors.white.withOpacity(0.92),
-          size: size * 0.43,
-        );
-
-      case GemSpecialType.bomb:
-        return Icon(
-          Icons.brightness_7_rounded,
-          color: Colors.white.withOpacity(0.92),
-          size: size * 0.42,
-        );
-
-      case GemSpecialType.colorBomb:
-        return Icon(
-          Icons.auto_awesome_rounded,
-          color: Colors.white.withOpacity(0.94),
-          size: size * 0.43,
-        );
-    }
-  }
-
-  List<Color> _gemColors(GemType type) {
-    switch (type) {
-      case GemType.pink:
-        return const [
-          Color(0xFFFFB8D8),
-          Color(0xFFFF4B97),
-          Color(0xFFD92F7C),
-        ];
-
-      case GemType.blue:
-        return const [
-          Color(0xFFB5F0FF),
-          Color(0xFF3FADFF),
-          Color(0xFF2378D4),
-        ];
-
-      case GemType.purple:
-        return const [
-          Color(0xFFE1C5FF),
-          Color(0xFF955CF0),
-          Color(0xFF6635B8),
-        ];
-
-      case GemType.green:
-        return const [
-          Color(0xFFB9F6CF),
-          Color(0xFF42C975),
-          Color(0xFF23904E),
-        ];
-
-      case GemType.yellow:
-        return const [
-          Color(0xFFFFF4A9),
-          Color(0xFFFFCA31),
-          Color(0xFFE39A0D),
-        ];
-
-      case GemType.orange:
-        return const [
-          Color(0xFFFFD5A8),
-          Color(0xFFFF8944),
-          Color(0xFFD95C20),
-        ];
-    }
   }
 }
