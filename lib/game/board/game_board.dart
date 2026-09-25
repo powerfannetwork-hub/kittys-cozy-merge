@@ -124,19 +124,30 @@ class GameBoard {
       );
     }
 
-    final firstCell = cellAt(first);
-    final secondCell = cellAt(second);
+    if (!canMoveTo(first) || !canMoveTo(second)) {
+      throw StateError(
+        'Blocked cells cannot be swapped.',
+      );
+    }
 
-    final firstGem = firstCell.gem;
-    final secondGem = secondCell.gem;
+    final firstGem = gemAt(first);
+    final secondGem = gemAt(second);
 
     setGem(first, secondGem);
     setGem(second, firstGem);
   }
 
-  void clearGems(Iterable<BoardPosition> positions) {
+  void clearGems(
+    Iterable<BoardPosition> positions,
+  ) {
     for (final position in positions) {
-      if (isInside(position)) {
+      if (!isInside(position)) {
+        continue;
+      }
+
+      final cell = cellAt(position);
+
+      if (cell.isAvailable) {
         removeGem(position);
       }
     }
@@ -152,14 +163,61 @@ class GameBoard {
           column: column,
         );
 
-        if (!cellAt(position).hasGem &&
-            cellAt(position).isAvailable) {
+        final cell = cellAt(position);
+
+        if (cell.isAvailable && !cell.hasGem) {
           result.add(position);
         }
       }
     }
 
     return result;
+  }
+
+  void applyGravity() {
+    for (int column = 0; column < columns; column++) {
+      int targetRow = rows - 1;
+
+      for (int row = rows - 1; row >= 0; row--) {
+        final position = BoardPosition(
+          row: row,
+          column: column,
+        );
+
+        final cell = cellAt(position);
+
+        if (!cell.isAvailable) {
+          continue;
+        }
+
+        final gem = cell.gem;
+
+        if (gem == null) {
+          continue;
+        }
+
+        final targetPosition = BoardPosition(
+          row: targetRow,
+          column: column,
+        );
+
+        while (targetRow >= 0 &&
+            !cellAt(targetPosition).isAvailable) {
+          targetRow--;
+        }
+
+        if (targetRow < 0) {
+          break;
+        }
+
+        if (row != targetRow) {
+          setGem(position, null);
+          setGem(targetPosition, gem);
+        }
+
+        targetRow--;
+      }
+    }
   }
 
   @visibleForTesting
