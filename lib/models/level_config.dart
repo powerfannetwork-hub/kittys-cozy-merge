@@ -13,45 +13,25 @@ class LevelConfig {
   })  : assert(levelNumber > 0),
         assert(rows > 0),
         assert(columns > 0),
-        assert(moves > 0),
-        assert(goals.isNotEmpty);
+        assert(moves > 0);
 
-  /// The unique level number.
   final int levelNumber;
-
-  /// Number of rows on the board.
   final int rows;
-
-  /// Number of columns on the board.
   final int columns;
-
-  /// Maximum number of moves available.
   final int moves;
-
-  /// Goals required to complete this level.
   final List<LevelGoal> goals;
 
-  /// Total number of goals in this level.
   int get goalCount => goals.length;
 
-  /// Whether every goal in the level is complete.
-  bool get isComplete {
-    return goals.every(
-      (goal) => goal.isComplete,
-    );
-  }
+  bool get isComplete => goals.every(
+        (goal) => goal.isComplete,
+      );
 
-  /// Number of goals already completed.
-  int get completedGoalCount {
-    return goals.where(
-      (goal) => goal.isComplete,
-    ).length;
-  }
+  int get completedGoalCount =>
+      goals.where(
+        (goal) => goal.isComplete,
+      ).length;
 
-  /// Whether the level configuration is valid.
-  ///
-  /// This is separate from constructor assertions so the
-  /// configuration can also be validated safely at runtime.
   bool get isValid {
     if (levelNumber <= 0 ||
         rows <= 0 ||
@@ -66,7 +46,6 @@ class LevelConfig {
     );
   }
 
-  /// Returns a copy with optional updated values.
   LevelConfig copyWith({
     int? levelNumber,
     int? rows,
@@ -75,25 +54,19 @@ class LevelConfig {
     List<LevelGoal>? goals,
   }) {
     return LevelConfig(
-      levelNumber:
-          levelNumber ?? this.levelNumber,
+      levelNumber: levelNumber ?? this.levelNumber,
       rows: rows ?? this.rows,
-      columns:
-          columns ?? this.columns,
+      columns: columns ?? this.columns,
       moves: moves ?? this.moves,
       goals: goals ?? this.goals,
     );
   }
 
-  /// Returns a new configuration with one goal replaced.
-  ///
-  /// The index must point to an existing goal.
   LevelConfig updateGoal(
     int index,
     LevelGoal goal,
   ) {
-    if (index < 0 ||
-        index >= goals.length) {
+    if (index < 0 || index >= goals.length) {
       throw RangeError.index(
         index,
         goals,
@@ -102,8 +75,7 @@ class LevelConfig {
       );
     }
 
-    final updatedGoals =
-        List<LevelGoal>.from(goals);
+    final updatedGoals = List<LevelGoal>.from(goals);
 
     updatedGoals[index] = goal;
 
@@ -114,13 +86,10 @@ class LevelConfig {
     );
   }
 
-  /// Returns a new configuration with all goals
-  /// replaced by the supplied list.
   LevelConfig withGoals(
     Iterable<LevelGoal> newGoals,
   ) {
-    final updatedGoals =
-        List<LevelGoal>.unmodifiable(
+    final updatedGoals = List<LevelGoal>.unmodifiable(
       newGoals,
     );
 
@@ -135,11 +104,8 @@ class LevelConfig {
     );
   }
 
-  /// Creates a fresh level configuration where every
-  /// goal starts from zero progress.
   LevelConfig resetGoalProgress() {
-    final resetGoals =
-        goals.map(
+    final resetGoals = goals.map(
       (goal) => goal.setProgress(0),
     );
 
@@ -156,21 +122,18 @@ class LevelConfig {
       return false;
     }
 
-    if (other.levelNumber !=
-            levelNumber ||
+    if (other.levelNumber != levelNumber ||
         other.rows != rows ||
         other.columns != columns ||
         other.moves != moves ||
-        other.goals.length !=
-            goals.length) {
+        other.goals.length != goals.length) {
       return false;
     }
 
     for (int index = 0;
         index < goals.length;
         index++) {
-      if (other.goals[index] !=
-          goals[index]) {
+      if (other.goals[index] != goals[index]) {
         return false;
       }
     }
