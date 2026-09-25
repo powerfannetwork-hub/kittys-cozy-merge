@@ -19,7 +19,7 @@ class GameScreen extends StatefulWidget {
 }
 
 class _GameScreenState extends State<GameScreen> {
-  late final LevelSession _session;
+  late LevelSession _session;
 
   BoardPosition? _dragStart;
   Offset? _lastDragPosition;
@@ -53,8 +53,8 @@ class _GameScreenState extends State<GameScreen> {
       return;
     }
 
-    final cell = _session.board.cells[
-        position.row * _session.columns + position.column];
+    final cell =
+        _session.board.cells[position.row][position.column];
 
     if (!cell.isAvailable || !cell.hasGem) {
       return;
@@ -89,7 +89,9 @@ class _GameScreenState extends State<GameScreen> {
     if (start == null ||
         endOffset == null ||
         _processingMove) {
-      setState(() {});
+      if (mounted) {
+        setState(() {});
+      }
       return;
     }
 
@@ -99,21 +101,28 @@ class _GameScreenState extends State<GameScreen> {
     );
 
     if (end == null || !start.isAdjacentTo(end)) {
-      setState(() {});
+      if (mounted) {
+        setState(() {});
+      }
       return;
     }
 
-    final targetCell = _session.board.cells[
-        end.row * _session.columns + end.column];
+    final targetCell =
+        _session.board.cells[end.row][end.column];
 
     if (!targetCell.isAvailable ||
         !targetCell.hasGem) {
-      setState(() {});
+      if (mounted) {
+        setState(() {});
+      }
       return;
     }
 
     _processingMove = true;
-    setState(() {});
+
+    if (mounted) {
+      setState(() {});
+    }
 
     final result = _session.makeMove(
       GemSwap(
@@ -122,16 +131,15 @@ class _GameScreenState extends State<GameScreen> {
       ),
     );
 
-    if (mounted) {
-      setState(() {});
-    }
-
     _processingMove = false;
 
-    if (!mounted || result == null) {
-      if (mounted) {
-        setState(() {});
-      }
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {});
+
+    if (result == null) {
       return;
     }
 
@@ -142,6 +150,7 @@ class _GameScreenState extends State<GameScreen> {
 
     if (!_session.hasMovesRemaining) {
       await _showOutOfMovesDialog();
+      return;
     }
 
     if (mounted) {
@@ -177,7 +186,9 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   Future<void> _showCompleteDialog() async {
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
 
     await showDialog<void>(
       context: context,
@@ -244,7 +255,9 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   Future<void> _showOutOfMovesDialog() async {
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
 
     await showDialog<void>(
       context: context,
@@ -279,8 +292,7 @@ class _GameScreenState extends State<GameScreen> {
                 _restartLevel();
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor:
-                    const Color(0xFFFF68AA),
+                backgroundColor: const Color(0xFFFF68AA),
                 foregroundColor: Colors.white,
               ),
               child: const Text(
@@ -298,6 +310,9 @@ class _GameScreenState extends State<GameScreen> {
       _session = LevelSession.create(
         levelNumber: widget.levelNumber,
       );
+      _dragStart = null;
+      _lastDragPosition = null;
+      _processingMove = false;
     });
   }
 
@@ -319,14 +334,13 @@ class _GameScreenState extends State<GameScreen> {
                   final availableHeight =
                       constraints.maxHeight - 28;
 
-                  final cellSize =
-                      (availableWidth /
-                              _session.columns)
-                          .clamp(
-                    1.0,
-                    availableHeight /
-                        _session.rows,
-                  );
+                  final cellSize = (availableWidth /
+                          _session.columns)
+                      .clamp(
+                        1.0,
+                        availableHeight / _session.rows,
+                      )
+                      .toDouble();
 
                   final boardWidth =
                       cellSize * _session.columns;
@@ -499,8 +513,8 @@ class _GameScreenState extends State<GameScreen> {
     int column,
     double cellSize,
   ) {
-    final cell = _session.board.cells[
-        row * _session.columns + column];
+    final cell =
+        _session.board.cells[row][column];
 
     final position = BoardPosition(
       row: row,
@@ -693,8 +707,7 @@ class _GoalsHud extends StatelessWidget {
 
                   return Expanded(
                     child: Padding(
-                      padding:
-                          EdgeInsets.only(
+                      padding: EdgeInsets.only(
                         right:
                             index == goals.length - 1
                                 ? 0
@@ -897,7 +910,7 @@ class _GameHeaderButton extends StatelessWidget {
           height: 44,
           child: Icon(
             icon,
-            color: const Color(0xFF705C69),
+            color: Color(0xFF705C69),
             size: 22,
           ),
         ),
@@ -974,7 +987,8 @@ class _GemWidget extends StatelessWidget {
                   size * 0.18,
                 ),
                 border: Border.all(
-                  color: Colors.white.withOpacity(0.45),
+                  color:
+                      Colors.white.withOpacity(0.45),
                   width: 1.1,
                 ),
               ),
@@ -992,24 +1006,28 @@ class _GemWidget extends StatelessWidget {
     switch (special) {
       case GemSpecialType.normal:
         return const SizedBox.shrink();
+
       case GemSpecialType.rocketHorizontal:
         return Icon(
           Icons.arrow_forward_rounded,
           color: Colors.white.withOpacity(0.92),
           size: size * 0.43,
         );
+
       case GemSpecialType.rocketVertical:
         return Icon(
           Icons.arrow_upward_rounded,
           color: Colors.white.withOpacity(0.92),
           size: size * 0.43,
         );
+
       case GemSpecialType.bomb:
         return Icon(
           Icons.brightness_7_rounded,
           color: Colors.white.withOpacity(0.92),
           size: size * 0.42,
         );
+
       case GemSpecialType.colorBomb:
         return Icon(
           Icons.auto_awesome_rounded,
@@ -1027,30 +1045,35 @@ class _GemWidget extends StatelessWidget {
           Color(0xFFFF4B97),
           Color(0xFFD92F7C),
         ];
+
       case GemType.blue:
         return const [
           Color(0xFFB5F0FF),
           Color(0xFF3FADFF),
           Color(0xFF2378D4),
         ];
+
       case GemType.purple:
         return const [
           Color(0xFFE1C5FF),
           Color(0xFF955CF0),
           Color(0xFF6635B8),
         ];
+
       case GemType.green:
         return const [
           Color(0xFFB9F6CF),
           Color(0xFF42C975),
           Color(0xFF23904E),
         ];
+
       case GemType.yellow:
         return const [
           Color(0xFFFFF4A9),
           Color(0xFFFFCA31),
           Color(0xFFE39A0D),
         ];
+
       case GemType.orange:
         return const [
           Color(0xFFFFD5A8),
