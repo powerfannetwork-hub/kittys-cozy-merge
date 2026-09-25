@@ -13,7 +13,6 @@ class GameBoard {
             cells ?? _createEmptyCells(rows, columns);
 
   final int rows;
-
   final int columns;
 
   final List<List<BoardCell>> _cells;
@@ -98,6 +97,10 @@ class GameBoard {
   }
 
   void removeGem(BoardPosition position) {
+    if (!isInside(position)) {
+      return;
+    }
+
     final cell = cellAt(position);
 
     setCell(
@@ -271,6 +274,12 @@ class GameBoard {
     setGem(second, firstGem);
   }
 
+  /// Clears matched gems and damages any Ice
+  /// covering those matched positions.
+  ///
+  /// Ice is processed before the gem is removed,
+  /// so every matched gem can contribute one
+  /// layer of Ice damage.
   void clearGems(
     Iterable<BoardPosition> positions,
   ) {
@@ -281,10 +290,50 @@ class GameBoard {
 
       final cell = cellAt(position);
 
-      if (cell.isAvailable) {
-        removeGem(position);
+      if (!cell.isAvailable) {
+        continue;
       }
+
+      if (!cell.hasGem) {
+        continue;
+      }
+
+      if (cell.hasIce) {
+        damageIce(position);
+      }
+
+      removeGem(position);
     }
+  }
+
+  /// Clears matched gems and returns the number
+  /// of gems that were actually removed.
+  int clearGemsAndCount(
+    Iterable<BoardPosition> positions,
+  ) {
+    int cleared = 0;
+
+    for (final position in positions) {
+      if (!isInside(position)) {
+        continue;
+      }
+
+      final cell = cellAt(position);
+
+      if (!cell.isAvailable ||
+          !cell.hasGem) {
+        continue;
+      }
+
+      if (cell.hasIce) {
+        damageIce(position);
+      }
+
+      removeGem(position);
+      cleared++;
+    }
+
+    return cleared;
   }
 
   List<BoardPosition> emptyPositions() {
@@ -339,8 +388,7 @@ class GameBoard {
         }
 
         while (targetRow >= 0) {
-          final targetPosition =
-              BoardPosition(
+          final targetPosition = BoardPosition(
             row: targetRow,
             column: column,
           );
@@ -375,11 +423,9 @@ class GameBoard {
   }
 
   @visibleForTesting
-  List<List<BoardCell>> get mutableCells =>
-      _cells;
+  List<List<BoardCell>> get mutableCells => _cells;
 
-  static List<List<BoardCell>>
-      _createEmptyCells(
+  static List<List<BoardCell>> _createEmptyCells(
     int rows,
     int columns,
   ) {
