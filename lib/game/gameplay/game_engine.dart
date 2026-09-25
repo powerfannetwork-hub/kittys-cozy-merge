@@ -1,3 +1,4 @@
+import '../../models/gem_type.dart';
 import '../board/board_position.dart';
 import '../board/game_board.dart';
 import '../gems/gem.dart';
@@ -107,15 +108,18 @@ class GameEngine {
 
     _movesRemaining--;
 
-    final result = _resolveMatches();
+    final resolution = _resolveMatches();
 
     return SwapResult(
       status: SwapStatus.successful,
       from: swap.from,
       to: swap.to,
-      matchedPositions: result.matchedPositions,
-      cascadeCount: result.cascadeCount,
-      scoreGained: result.scoreGained,
+      matchedPositions:
+          resolution.matchedPositions,
+      cascadeCount:
+          resolution.cascadeCount,
+      scoreGained:
+          resolution.scoreGained,
     );
   }
 
@@ -130,14 +134,18 @@ class GameEngine {
       from: result.from,
       to: result.to,
       movesRemaining: _movesRemaining,
-      matchedGemCount: result.matchedPositions.length,
-      cascadeCount: result.cascadeCount,
-      scoreGained: result.scoreGained,
+      matchedGemCount:
+          result.matchedPositions.length,
+      cascadeCount:
+          result.cascadeCount,
+      scoreGained:
+          result.scoreGained,
     );
   }
 
   _ResolutionResult _resolveMatches() {
-    final allMatchedPositions = <BoardPosition>{};
+    final allMatchedPositions =
+        <BoardPosition>{};
 
     int cascadeCount = 0;
     int scoreGained = 0;
@@ -152,7 +160,8 @@ class GameEngine {
 
       cascadeCount++;
 
-      final matchedPositions = matchResult.positions;
+      final matchedPositions =
+          matchResult.positions;
 
       allMatchedPositions.addAll(
         matchedPositions,
@@ -162,7 +171,9 @@ class GameEngine {
           matchedPositions.length * 10;
 
       final cascadeMultiplier =
-          cascadeCount > 1 ? cascadeCount : 1;
+          cascadeCount > 1
+              ? cascadeCount
+              : 1;
 
       final gained =
           baseScore * cascadeMultiplier;
@@ -180,9 +191,12 @@ class GameEngine {
     }
 
     return _ResolutionResult(
-      matchedPositions: allMatchedPositions,
-      cascadeCount: cascadeCount,
-      scoreGained: scoreGained,
+      matchedPositions:
+          allMatchedPositions,
+      cascadeCount:
+          cascadeCount,
+      scoreGained:
+          scoreGained,
     );
   }
 
@@ -191,9 +205,8 @@ class GameEngine {
         _board.emptyPositions();
 
     for (final position in emptyPositions) {
-      final type = _chooseRefillType(
-        position,
-      );
+      final type =
+          _chooseRefillType(position);
 
       _board.setGem(
         position,
@@ -206,34 +219,34 @@ class GameEngine {
     }
   }
 
-  dynamic _chooseRefillType(
+  GemType _chooseRefillType(
     BoardPosition position,
   ) {
-    final types =
-        BoardGenerator.availableGemTypes;
+    final types = List<GemType>.from(
+      BoardGenerator.availableGemTypes,
+    );
 
-    final shuffled = List.of(types)
-      ..shuffle();
+    types.shuffle();
 
-    for (final type in shuffled) {
+    for (final type in types) {
       if (!_createsImmediateHorizontalMatch(
-        position,
-        type,
-      ) &&
+            position,
+            type,
+          ) &&
           !_createsImmediateVerticalMatch(
-        position,
-        type,
-      )) {
+            position,
+            type,
+          )) {
         return type;
       }
     }
 
-    return shuffled.first;
+    return types.first;
   }
 
   bool _createsImmediateHorizontalMatch(
     BoardPosition position,
-    dynamic type,
+    GemType type,
   ) {
     if (position.column < 2) {
       return false;
@@ -255,7 +268,7 @@ class GameEngine {
 
   bool _createsImmediateVerticalMatch(
     BoardPosition position,
-    dynamic type,
+    GemType type,
   ) {
     if (position.row < 2) {
       return false;
@@ -275,7 +288,9 @@ class GameEngine {
         _board.gemAt(second)?.type == type;
   }
 
-  String _createGemId(BoardPosition position) {
+  String _createGemId(
+    BoardPosition position,
+  ) {
     return 'gem_'
         '${DateTime.now().microsecondsSinceEpoch}_'
         '${position.row}_'
@@ -291,6 +306,8 @@ class _ResolutionResult {
   });
 
   final Set<BoardPosition> matchedPositions;
+
   final int cascadeCount;
+
   final int scoreGained;
 }
