@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../screens/map/level_map_screen.dart';
 import '../../services/game_storage_service.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -7,6 +8,14 @@ class HomeScreen extends StatelessWidget {
 
   GameStorageService get _storage =>
       GameStorageService.instance;
+
+  void _openLevelMap(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => const LevelMapScreen(),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +36,7 @@ class HomeScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildTopBar(),
+                  _buildTopBar(context),
                   const SizedBox(height: 22),
                   _buildHeroCard(),
                   const SizedBox(height: 20),
@@ -41,14 +50,16 @@ class HomeScreen extends StatelessWidget {
                 ],
               ),
             ),
-            const _BottomNavigationBar(),
+            _BottomNavigationBar(
+              onMapTap: () => _openLevelMap(context),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildTopBar() {
+  Widget _buildTopBar(BuildContext context) {
     return Row(
       children: [
         Container(
@@ -262,16 +273,7 @@ class HomeScreen extends StatelessWidget {
             width: double.infinity,
             height: 58,
             child: ElevatedButton(
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      'Level Map is coming in the next build.',
-                    ),
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-              },
+              onPressed: () => _openLevelMap(context),
               style: ElevatedButton.styleFrom(
                 elevation: 0,
                 backgroundColor: const Color(0xFFFF68AA),
@@ -735,7 +737,11 @@ class _FeatureCard extends StatelessWidget {
 }
 
 class _BottomNavigationBar extends StatelessWidget {
-  const _BottomNavigationBar();
+  const _BottomNavigationBar({
+    required this.onMapTap,
+  });
+
+  final VoidCallback onMapTap;
 
   @override
   Widget build(BuildContext context) {
@@ -760,26 +766,23 @@ class _BottomNavigationBar extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            _NavItem(
+            const _NavItem(
               icon: Icons.home_rounded,
               label: 'Home',
               selected: true,
-              onTap: () {},
             ),
             _NavItem(
               icon: Icons.map_rounded,
               label: 'Map',
-              onTap: () {},
+              onTap: onMapTap,
             ),
-            _NavItem(
+            const _NavItem(
               icon: Icons.shopping_bag_rounded,
               label: 'Shop',
-              onTap: () {},
             ),
-            _NavItem(
+            const _NavItem(
               icon: Icons.settings_rounded,
               label: 'Settings',
-              onTap: () {},
             ),
           ],
         ),
@@ -792,14 +795,14 @@ class _NavItem extends StatelessWidget {
   const _NavItem({
     required this.icon,
     required this.label,
-    required this.onTap,
     this.selected = false,
+    this.onTap,
   });
 
   final IconData icon;
   final String label;
-  final VoidCallback onTap;
   final bool selected;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
