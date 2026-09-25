@@ -2,9 +2,9 @@ import '../../models/gem_type.dart';
 import '../board/board_position.dart';
 import '../board/game_board.dart';
 import '../gems/gem.dart';
-import 'board_generator.dart';
 import 'gem_swap.dart';
 import 'match_detector.dart';
+import 'match_result.dart';
 import 'move_result.dart';
 import 'swap_result.dart';
 
@@ -13,13 +13,10 @@ class GameEngine {
     required GameBoard board,
     required int moves,
     MatchDetector? matchDetector,
-    BoardGenerator? boardGenerator,
   })  : _board = board,
         _movesRemaining = moves,
         _matchDetector =
-            matchDetector ?? const MatchDetector(),
-        _boardGenerator =
-            boardGenerator ?? BoardGenerator() {
+            matchDetector ?? const MatchDetector() {
     if (moves < 0) {
       throw ArgumentError(
         'Moves cannot be negative.',
@@ -34,8 +31,6 @@ class GameEngine {
   int _score = 0;
 
   final MatchDetector _matchDetector;
-
-  final BoardGenerator _boardGenerator;
 
   GameBoard get board => _board;
 
@@ -108,7 +103,9 @@ class GameEngine {
 
     _movesRemaining--;
 
-    final resolution = _resolveMatches();
+    final resolution = _resolveMatches(
+      preferredSpecialPosition: swap.to,
+    );
 
     return SwapResult(
       status: SwapStatus.successful,
@@ -143,12 +140,17 @@ class GameEngine {
     );
   }
 
-  _ResolutionResult _resolveMatches() {
+  _ResolutionResult _resolveMatches({
+    BoardPosition? preferredSpecialPosition,
+  }) {
     final allMatchedPositions =
         <BoardPosition>{};
 
     int cascadeCount = 0;
     int scoreGained = 0;
+
+    BoardPosition? specialPosition =
+        preferredSpecialPosition;
 
     while (true) {
       final matchResult =
@@ -181,13 +183,34 @@ class GameEngine {
       scoreGained += gained;
       _score += gained;
 
-      _board.clearGems(
-        matchedPositions,
+      final specialCreation =
+          _selectSpecialCreation(
+        matchResult,
+        specialPosition,
       );
+
+      if (specialCreation != null) {
+        _createSpecialGem(
+          position: specialCreation.position,
+          type: specialCreation.type,
+        );
+
+        for (final position in matchedPositions) {
+          if (position != specialCreation.position) {
+            _removeGemIfAvailable(position);
+          }
+        }
+      } else {
+        _board.clearGems(
+          matchedPositions,
+        );
+      }
 
       _board.applyGravity();
 
       _refillEmptyCells();
+
+      specialPosition = null;
     }
 
     return _ResolutionResult(
@@ -198,6 +221,99 @@ class GameEngine {
       scoreGained:
           scoreGained,
     );
+  }
+
+  _SpecialCreation? _selectSpecialCreation(
+    MatchResult matchResult,
+    BoardPosition? preferredPosition,
+  ) {
+    final specialType =
+        matchResult.specialMatchType;
+
+    if (specialType == SpecialMatchType.none) {
+      return null;
+    }
+
+    BoardPosition? position;
+
+    if (preferredPosition != null &&
+        matchResult.positions.contains(
+          preferredPosition,
+        )) {
+      position = preferredPosition;
+    } else {
+      position = matchResult.specialGemPosition;
+    }
+
+    if (position == null) {
+      return null;
+    }
+
+    final gemSpecialType =
+        _toGemSpecialType(specialType);
+
+    if (gemSpecialType == GemSpecialType.normal) {
+      return null;
+    }
+
+    return _SpecialCreation(
+      position: position,
+      type: gemSpecialType,
+    );
+  }
+
+  GemSpecialType _toGemSpecialType(
+    SpecialMatchType type,
+  ) {
+    switch (type) {
+      case SpecialMatchType.none:
+        return GemSpecialType.normal;
+
+      case SpecialMatchType.rocketHorizontal:
+        return GemSpecialType.rocketHorizontal;
+
+      case SpecialMatchType.rocketVertical:
+        return GemSpecialType.rocketVertical;
+
+      case SpecialMatchType.bomb:
+        return GemSpecialType.bomb;
+
+      case SpecialMatchType.colorBomb:
+        return GemSpecialType.colorBomb;
+    }
+  }
+
+  void _createSpecialGem({
+    required BoardPosition position,
+    required GemSpecialType type,
+  }) {
+    final existingGem =
+        _board.gemAt(position);
+
+    if (existingGem == null) {
+      return;
+    }
+
+    _board.setGem(
+      position,
+      existingGem.copyWith(
+        specialType: type,
+      ),
+    );
+  }
+
+  void _removeGemIfAvailable(
+    BoardPosition position,
+  ) {
+    if (!_board.isInside(position)) {
+      return;
+    }
+
+    final cell = _board.cellAt(position);
+
+    if (cell.isAvailable) {
+      _board.removeGem(position);
+    }
   }
 
   void _refillEmptyCells() {
@@ -222,9 +338,9 @@ class GameEngine {
   GemType _chooseRefillType(
     BoardPosition position,
   ) {
-    final types = List<GemType>.from(
-      BoardGenerator.availableGemTypes,
-    );
+    final types = <GemType>[
+      ..._availableGemTypes,
+    ];
 
     types.shuffle();
 
@@ -296,6 +412,27 @@ class GameEngine {
         '${position.row}_'
         '${position.column}';
   }
+
+  static const List<GemType> _availableGemTypes =
+      <GemType>[
+    GemType.pink,
+    GemType.blue,
+    GemType.purple,
+    GemType.green,
+    GemType.yellow,
+    GemType.orange,
+  ];
+}
+
+class _SpecialCreation {
+  const _SpecialCreation({
+    required this.position,
+    required this.type,
+  });
+
+  final BoardPosition position;
+
+  final GemSpecialType type;
 }
 
 class _ResolutionResult {
