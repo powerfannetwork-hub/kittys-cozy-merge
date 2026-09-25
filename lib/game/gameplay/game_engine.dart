@@ -3,6 +3,7 @@ import '../board/board_position.dart';
 import '../board/game_board.dart';
 import '../gems/gem.dart';
 import 'gem_swap.dart';
+import 'level_goal_tracker.dart';
 import 'match_detector.dart';
 import 'match_result.dart';
 import 'move_result.dart';
@@ -12,9 +13,11 @@ class GameEngine {
   GameEngine({
     required GameBoard board,
     required int moves,
+    LevelGoalTracker? goalTracker,
     MatchDetector? matchDetector,
   })  : _board = board,
         _movesRemaining = moves,
+        _goalTracker = goalTracker,
         _matchDetector =
             matchDetector ?? const MatchDetector() {
     if (moves < 0) {
@@ -30,6 +33,8 @@ class GameEngine {
 
   int _score = 0;
 
+  final LevelGoalTracker? _goalTracker;
+
   final MatchDetector _matchDetector;
 
   GameBoard get board => _board;
@@ -38,8 +43,14 @@ class GameEngine {
 
   int get score => _score;
 
+  LevelGoalTracker? get goalTracker =>
+      _goalTracker;
+
   bool get hasMovesRemaining =>
       _movesRemaining > 0;
+
+  bool get isLevelComplete =>
+      _goalTracker?.isComplete ?? false;
 
   SwapResult trySwap(GemSwap swap) {
     if (!swap.isAdjacent) {
@@ -91,18 +102,6 @@ class GameEngine {
       swap.to,
     );
 
-    /*
-     * Special gems activate immediately after
-     * a valid swap.
-     *
-     * This includes:
-     * - Color Bomb + Color Bomb
-     * - Color Bomb + Special
-     * - Rocket + Rocket
-     * - Rocket + Bomb
-     * - Bomb + Bomb
-     * - Special + Normal
-     */
     if (firstGem.isSpecial ||
         secondGem.isSpecial) {
       _movesRemaining--;
@@ -130,11 +129,6 @@ class GameEngine {
         _matchDetector.findMatches(_board);
 
     if (!initialMatch.hasMatch) {
-      /*
-       * No match means the swap is rejected
-       * and the board returns to its original
-       * state.
-       */
       _board.swap(
         swap.from,
         swap.to,
@@ -213,12 +207,6 @@ class GameEngine {
 
     int scoreGained = 0;
 
-    /*
-     * COLOR BOMB + COLOR BOMB
-     *
-     * Clears all gems on the board.
-     * Ice on affected cells is damaged.
-     */
     if (firstGem.specialType ==
             GemSpecialType.colorBomb &&
         secondGem.specialType ==
@@ -241,12 +229,6 @@ class GameEngine {
       );
     }
 
-    /*
-     * COLOR BOMB + SPECIAL
-     *
-     * All gems of the special gem's color
-     * are activated/cleared.
-     */
     if (firstGem.specialType ==
             GemSpecialType.colorBomb ||
         secondGem.specialType ==
@@ -283,9 +265,6 @@ class GameEngine {
       );
     }
 
-    /*
-     * ROCKET + ROCKET
-     */
     if (_isRocket(firstGem) &&
         _isRocket(secondGem)) {
       final positions =
@@ -309,9 +288,6 @@ class GameEngine {
       );
     }
 
-    /*
-     * BOMB + BOMB
-     */
     if (firstGem.specialType ==
             GemSpecialType.bomb &&
         secondGem.specialType ==
@@ -337,9 +313,6 @@ class GameEngine {
       );
     }
 
-    /*
-     * ROCKET + BOMB
-     */
     if ((_isRocket(firstGem) &&
             secondGem.specialType ==
                 GemSpecialType.bomb) ||
@@ -377,9 +350,6 @@ class GameEngine {
       );
     }
 
-    /*
-     * SPECIAL + NORMAL GEM
-     */
     final specialGem =
         firstGem.isSpecial
             ? firstGem
@@ -460,6 +430,8 @@ class GameEngine {
       scoreGained += gained;
       _score += gained;
 
+      _goalTracker?.addScore(gained);
+
       final specialCreation =
           _selectSpecialCreation(
         matchResult,
@@ -467,12 +439,6 @@ class GameEngine {
       );
 
       if (specialCreation != null) {
-        /*
-         * The special gem survives the match.
-         *
-         * If it is sitting on Ice, one Ice layer
-         * is damaged while the special gem remains.
-         */
         _damageIceAtPosition(
           specialCreation.position,
         );
@@ -494,12 +460,7 @@ class GameEngine {
           }
         }
       } else {
-        /*
-         * GameBoard handles:
-         * - removing the matched gem
-         * - damaging one Ice layer
-         */
-        _board.clearGems(
+        _clearMatchedGems(
           matchedPositions,
         );
       }
@@ -519,6 +480,56 @@ class GameEngine {
       scoreGained:
           scoreGained,
     );
+  }
+
+  void _clearMatchedGems(
+    Set<BoardPosition> positions,
+  ) {
+    final gemTypes =
+        <GemType, int>{};
+
+    int iceBroken = 0;
+
+    for (final position in positions) {
+      if (!_board.isInside(position)) {
+        continue;
+      }
+
+      final cell =
+          _board.cellAt(position);
+
+      if (!cell.isAvailable ||
+          !cell.hasGem) {
+        continue;
+      }
+
+      final gem =
+          _board.gemAt(position);
+
+      if (gem != null) {
+        gemTypes[gem.type] =
+            (gemTypes[gem.type] ?? 0) + 1;
+      }
+
+      if (cell.hasIce) {
+        iceBroken++;
+      }
+    }
+
+    _board.clearGems(positions);
+
+    for (final entry in gemTypes.entries) {
+      _goalTracker?.collectGems(
+        gemType: entry.key,
+        amount: entry.value,
+      );
+    }
+
+    if (iceBroken > 0) {
+      _goalTracker?.breakIce(
+        iceBroken,
+      );
+    }
   }
 
   _SpecialCreation? _selectSpecialCreation(
@@ -951,17 +962,13 @@ class GameEngine {
     return positions;
   }
 
-  /// Clears gems affected by a special effect.
-  ///
-  /// Every affected gem:
-  /// - is removed
-  /// - damages one Ice layer if present
-  ///
-  /// This keeps special effects consistent
-  /// with normal match clearing.
   int _clearPositions(
     Set<BoardPosition> positions,
   ) {
+    final gemTypes =
+        <GemType, int>{};
+
+    int iceBroken = 0;
     int cleared = 0;
 
     for (final position in positions) {
@@ -977,8 +984,16 @@ class GameEngine {
         continue;
       }
 
+      final gem =
+          _board.gemAt(position);
+
+      if (gem != null) {
+        gemTypes[gem.type] =
+            (gemTypes[gem.type] ?? 0) + 1;
+      }
+
       if (cell.hasIce) {
-        _board.damageIce(position);
+        iceBroken++;
       }
 
       _board.removeGem(position);
@@ -986,9 +1001,23 @@ class GameEngine {
       cleared++;
     }
 
+    for (final entry in gemTypes.entries) {
+      _goalTracker?.collectGems(
+        gemType: entry.key,
+        amount: entry.value,
+      );
+    }
+
+    if (iceBroken > 0) {
+      _goalTracker?.breakIce(
+        iceBroken,
+      );
+    }
+
     final gained = cleared * 10;
 
     _score += gained;
+    _goalTracker?.addScore(gained);
 
     return gained;
   }
@@ -1002,6 +1031,8 @@ class GameEngine {
 
     if (_board.hasIceAt(position)) {
       _board.damageIce(position);
+
+      _goalTracker?.breakIce(1);
     }
   }
 
