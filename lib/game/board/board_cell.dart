@@ -1,25 +1,25 @@
 import 'package:flutter/foundation.dart';
 
-import '../../models/gem_type.dart';
+import '../gems/gem.dart';
 import 'board_position.dart';
 
 @immutable
 class BoardCell {
   const BoardCell({
     required this.position,
-    this.gemType,
+    this.gem,
     this.isBlocked = false,
     this.isLocked = false,
     this.iceLayers = 0,
   });
 
   final BoardPosition position;
-  final GemType? gemType;
+  final Gem? gem;
   final bool isBlocked;
   final bool isLocked;
   final int iceLayers;
 
-  bool get hasGem => gemType != null;
+  bool get hasGem => gem != null;
 
   bool get hasIce => iceLayers > 0;
 
@@ -28,7 +28,7 @@ class BoardCell {
 
   BoardCell copyWith({
     BoardPosition? position,
-    GemType? gemType,
+    Gem? gem,
     bool? isBlocked,
     bool? isLocked,
     int? iceLayers,
@@ -36,10 +36,28 @@ class BoardCell {
   }) {
     return BoardCell(
       position: position ?? this.position,
-      gemType: clearGem ? null : (gemType ?? this.gemType),
+      gem: clearGem ? null : (gem ?? this.gem),
       isBlocked: isBlocked ?? this.isBlocked,
       isLocked: isLocked ?? this.isLocked,
       iceLayers: iceLayers ?? this.iceLayers,
+    );
+  }
+
+  BoardCell removeGem() {
+    return copyWith(clearGem: true);
+  }
+
+  BoardCell moveGemTo(BoardPosition newPosition) {
+    final currentGem = gem;
+
+    return BoardCell(
+      position: newPosition,
+      gem: currentGem?.copyWith(
+        position: newPosition,
+      ),
+      isBlocked: isBlocked,
+      isLocked: isLocked,
+      iceLayers: iceLayers,
     );
   }
 
@@ -47,7 +65,7 @@ class BoardCell {
   bool operator ==(Object other) {
     return other is BoardCell &&
         other.position == position &&
-        other.gemType == gemType &&
+        other.gem == gem &&
         other.isBlocked == isBlocked &&
         other.isLocked == isLocked &&
         other.iceLayers == iceLayers;
@@ -57,10 +75,21 @@ class BoardCell {
   int get hashCode {
     return Object.hash(
       position,
-      gemType,
+      gem,
       isBlocked,
       isLocked,
       iceLayers,
     );
+  }
+
+  @override
+  String toString() {
+    return 'BoardCell('
+        'position: $position, '
+        'gem: $gem, '
+        'blocked: $isBlocked, '
+        'locked: $isLocked, '
+        'iceLayers: $iceLayers'
+        ')';
   }
 }
