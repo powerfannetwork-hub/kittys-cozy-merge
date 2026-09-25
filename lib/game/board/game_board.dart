@@ -9,9 +9,11 @@ class GameBoard {
     required this.rows,
     required this.columns,
     List<List<BoardCell>>? cells,
-  }) : _cells = cells ?? _createEmptyCells(rows, columns);
+  }) : _cells =
+            cells ?? _createEmptyCells(rows, columns);
 
   final int rows;
+
   final int columns;
 
   final List<List<BoardCell>> _cells;
@@ -45,14 +47,36 @@ class GameBoard {
     return cellAt(position).gem;
   }
 
+  bool hasObstacleAt(BoardPosition position) {
+    return cellAt(position).hasObstacle;
+  }
+
+  bool hasIceAt(BoardPosition position) {
+    return cellAt(position).hasIce;
+  }
+
+  bool hasBlockAt(BoardPosition position) {
+    return cellAt(position).hasBlock;
+  }
+
+  bool hasLockedTileAt(BoardPosition position) {
+    return cellAt(position).hasLockedTile;
+  }
+
+  int iceLayersAt(BoardPosition position) {
+    return cellAt(position).iceLayers;
+  }
+
   void setCell(BoardCell cell) {
     if (!isInside(cell.position)) {
       throw RangeError(
-        'Board position is outside the board: ${cell.position}',
+        'Board position is outside the board: '
+        '${cell.position}',
       );
     }
 
-    _cells[cell.position.row][cell.position.column] = cell;
+    _cells[cell.position.row][cell.position.column] =
+        cell;
   }
 
   void setGem(
@@ -75,7 +99,115 @@ class GameBoard {
 
   void removeGem(BoardPosition position) {
     final cell = cellAt(position);
-    setCell(cell.removeGem());
+
+    setCell(
+      cell.removeGem(),
+    );
+  }
+
+  void damageIce(BoardPosition position) {
+    if (!isInside(position)) {
+      return;
+    }
+
+    final cell = cellAt(position);
+
+    if (!cell.hasIce) {
+      return;
+    }
+
+    setCell(
+      cell.damageIce(),
+    );
+  }
+
+  void damageIceAtPositions(
+    Iterable<BoardPosition> positions,
+  ) {
+    for (final position in positions) {
+      damageIce(position);
+    }
+  }
+
+  void unlockTile(BoardPosition position) {
+    if (!isInside(position)) {
+      return;
+    }
+
+    final cell = cellAt(position);
+
+    if (!cell.hasLockedTile) {
+      return;
+    }
+
+    setCell(
+      cell.unlock(),
+    );
+  }
+
+  void unlockTiles(
+    Iterable<BoardPosition> positions,
+  ) {
+    for (final position in positions) {
+      unlockTile(position);
+    }
+  }
+
+  void removeObstacle(BoardPosition position) {
+    if (!isInside(position)) {
+      return;
+    }
+
+    final cell = cellAt(position);
+
+    if (!cell.hasObstacle) {
+      return;
+    }
+
+    setCell(
+      cell.removeObstacle(),
+    );
+  }
+
+  void setIce(
+    BoardPosition position,
+    int layers,
+  ) {
+    if (!isInside(position)) {
+      return;
+    }
+
+    final cell = cellAt(position);
+
+    setCell(
+      cell.withIce(layers),
+    );
+  }
+
+  void setBlock(BoardPosition position) {
+    if (!isInside(position)) {
+      return;
+    }
+
+    final cell = cellAt(position);
+
+    setCell(
+      cell.withBlock(),
+    );
+  }
+
+  void setLockedTile(
+    BoardPosition position,
+  ) {
+    if (!isInside(position)) {
+      return;
+    }
+
+    final cell = cellAt(position);
+
+    setCell(
+      cell.withLockedTile(),
+    );
   }
 
   bool canMoveTo(BoardPosition position) {
@@ -112,7 +244,8 @@ class GameBoard {
     BoardPosition first,
     BoardPosition second,
   ) {
-    if (!isInside(first) || !isInside(second)) {
+    if (!isInside(first) ||
+        !isInside(second)) {
       throw RangeError(
         'Cannot swap positions outside the board.',
       );
@@ -124,7 +257,8 @@ class GameBoard {
       );
     }
 
-    if (!canMoveTo(first) || !canMoveTo(second)) {
+    if (!canMoveTo(first) ||
+        !canMoveTo(second)) {
       throw StateError(
         'Blocked cells cannot be swapped.',
       );
@@ -157,7 +291,9 @@ class GameBoard {
     final result = <BoardPosition>[];
 
     for (int row = 0; row < rows; row++) {
-      for (int column = 0; column < columns; column++) {
+      for (int column = 0;
+          column < columns;
+          column++) {
         final position = BoardPosition(
           row: row,
           column: column,
@@ -165,7 +301,8 @@ class GameBoard {
 
         final cell = cellAt(position);
 
-        if (cell.isAvailable && !cell.hasGem) {
+        if (cell.isAvailable &&
+            !cell.hasGem) {
           result.add(position);
         }
       }
@@ -175,10 +312,14 @@ class GameBoard {
   }
 
   void applyGravity() {
-    for (int column = 0; column < columns; column++) {
+    for (int column = 0;
+        column < columns;
+        column++) {
       int targetRow = rows - 1;
 
-      for (int row = rows - 1; row >= 0; row--) {
+      for (int row = rows - 1;
+          row >= 0;
+          row--) {
         final position = BoardPosition(
           row: row,
           column: column,
@@ -187,6 +328,7 @@ class GameBoard {
         final cell = cellAt(position);
 
         if (!cell.isAvailable) {
+          targetRow = row - 1;
           continue;
         }
 
@@ -196,19 +338,31 @@ class GameBoard {
           continue;
         }
 
-        final targetPosition = BoardPosition(
-          row: targetRow,
-          column: column,
-        );
+        while (targetRow >= 0) {
+          final targetPosition =
+              BoardPosition(
+            row: targetRow,
+            column: column,
+          );
 
-        while (targetRow >= 0 &&
-            !cellAt(targetPosition).isAvailable) {
+          final targetCell =
+              cellAt(targetPosition);
+
+          if (targetCell.isAvailable) {
+            break;
+          }
+
           targetRow--;
         }
 
         if (targetRow < 0) {
           break;
         }
+
+        final targetPosition = BoardPosition(
+          row: targetRow,
+          column: column,
+        );
 
         if (row != targetRow) {
           setGem(position, null);
@@ -221,9 +375,11 @@ class GameBoard {
   }
 
   @visibleForTesting
-  List<List<BoardCell>> get mutableCells => _cells;
+  List<List<BoardCell>> get mutableCells =>
+      _cells;
 
-  static List<List<BoardCell>> _createEmptyCells(
+  static List<List<BoardCell>>
+      _createEmptyCells(
     int rows,
     int columns,
   ) {
