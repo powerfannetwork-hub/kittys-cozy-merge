@@ -38,7 +38,8 @@ class GameEngine {
 
   int get score => _score;
 
-  bool get hasMovesRemaining => _movesRemaining > 0;
+  bool get hasMovesRemaining =>
+      _movesRemaining > 0;
 
   SwapResult trySwap(GemSwap swap) {
     if (!swap.isAdjacent) {
@@ -71,10 +72,14 @@ class GameEngine {
       );
     }
 
-    final firstGem = _board.gemAt(swap.from);
-    final secondGem = _board.gemAt(swap.to);
+    final firstGem =
+        _board.gemAt(swap.from);
 
-    if (firstGem == null || secondGem == null) {
+    final secondGem =
+        _board.gemAt(swap.to);
+
+    if (firstGem == null ||
+        secondGem == null) {
       return SwapResult.invalid(
         from: swap.from,
         to: swap.to,
@@ -87,11 +92,16 @@ class GameEngine {
     );
 
     /*
-     * Special gems can activate directly after a swap.
+     * Special gems activate immediately after
+     * a valid swap.
      *
-     * This is important because a special + special
-     * combination does not need to create a normal
-     * 3-match before it activates.
+     * This includes:
+     * - Color Bomb + Color Bomb
+     * - Color Bomb + Special
+     * - Rocket + Rocket
+     * - Rocket + Bomb
+     * - Bomb + Bomb
+     * - Special + Normal
      */
     if (firstGem.isSpecial ||
         secondGem.isSpecial) {
@@ -120,6 +130,11 @@ class GameEngine {
         _matchDetector.findMatches(_board);
 
     if (!initialMatch.hasMatch) {
+      /*
+       * No match means the swap is rejected
+       * and the board returns to its original
+       * state.
+       */
       _board.swap(
         swap.from,
         swap.to,
@@ -133,8 +148,10 @@ class GameEngine {
 
     _movesRemaining--;
 
-    final resolution = _resolveMatches(
-      preferredSpecialPosition: swap.to,
+    final resolution =
+        _resolveMatches(
+      preferredSpecialPosition:
+          swap.to,
     );
 
     return SwapResult(
@@ -160,7 +177,8 @@ class GameEngine {
     return MoveResult(
       from: result.from,
       to: result.to,
-      movesRemaining: _movesRemaining,
+      movesRemaining:
+          _movesRemaining,
       matchedGemCount:
           result.matchedPositions.length,
       cascadeCount:
@@ -183,7 +201,8 @@ class GameEngine {
     if (firstGem == null ||
         secondGem == null) {
       return const _ResolutionResult(
-        matchedPositions: <BoardPosition>{},
+        matchedPositions:
+            <BoardPosition>{},
         cascadeCount: 0,
         scoreGained: 0,
       );
@@ -195,9 +214,10 @@ class GameEngine {
     int scoreGained = 0;
 
     /*
-     * Color Bomb + Color Bomb
+     * COLOR BOMB + COLOR BOMB
      *
-     * Clears the entire board.
+     * Clears all gems on the board.
+     * Ice on affected cells is damaged.
      */
     if (firstGem.specialType ==
             GemSpecialType.colorBomb &&
@@ -206,19 +226,26 @@ class GameEngine {
       final positions =
           _allAvailableGemPositions();
 
-      matchedPositions.addAll(positions);
+      matchedPositions.addAll(
+        positions,
+      );
 
       scoreGained +=
           _clearPositions(positions);
 
       return _finishSpecialResolution(
-        matchedPositions: matchedPositions,
-        scoreGained: scoreGained,
+        matchedPositions:
+            matchedPositions,
+        scoreGained:
+            scoreGained,
       );
     }
 
     /*
-     * Color Bomb + another special
+     * COLOR BOMB + SPECIAL
+     *
+     * All gems of the special gem's color
+     * are activated/cleared.
      */
     if (firstGem.specialType ==
             GemSpecialType.colorBomb ||
@@ -241,19 +268,23 @@ class GameEngine {
         special: otherGem,
       );
 
-      matchedPositions.addAll(positions);
+      matchedPositions.addAll(
+        positions,
+      );
 
       scoreGained +=
           _clearPositions(positions);
 
       return _finishSpecialResolution(
-        matchedPositions: matchedPositions,
-        scoreGained: scoreGained,
+        matchedPositions:
+            matchedPositions,
+        scoreGained:
+            scoreGained,
       );
     }
 
     /*
-     * Rocket + Rocket
+     * ROCKET + ROCKET
      */
     if (_isRocket(firstGem) &&
         _isRocket(secondGem)) {
@@ -263,19 +294,23 @@ class GameEngine {
         secondPosition,
       );
 
-      matchedPositions.addAll(positions);
+      matchedPositions.addAll(
+        positions,
+      );
 
       scoreGained +=
           _clearPositions(positions);
 
       return _finishSpecialResolution(
-        matchedPositions: matchedPositions,
-        scoreGained: scoreGained,
+        matchedPositions:
+            matchedPositions,
+        scoreGained:
+            scoreGained,
       );
     }
 
     /*
-     * Bomb + Bomb
+     * BOMB + BOMB
      */
     if (firstGem.specialType ==
             GemSpecialType.bomb &&
@@ -287,19 +322,23 @@ class GameEngine {
         secondPosition,
       );
 
-      matchedPositions.addAll(positions);
+      matchedPositions.addAll(
+        positions,
+      );
 
       scoreGained +=
           _clearPositions(positions);
 
       return _finishSpecialResolution(
-        matchedPositions: matchedPositions,
-        scoreGained: scoreGained,
+        matchedPositions:
+            matchedPositions,
+        scoreGained:
+            scoreGained,
       );
     }
 
     /*
-     * Rocket + Bomb
+     * ROCKET + BOMB
      */
     if ((_isRocket(firstGem) &&
             secondGem.specialType ==
@@ -323,19 +362,23 @@ class GameEngine {
         rocket.specialType,
       );
 
-      matchedPositions.addAll(positions);
+      matchedPositions.addAll(
+        positions,
+      );
 
       scoreGained +=
           _clearPositions(positions);
 
       return _finishSpecialResolution(
-        matchedPositions: matchedPositions,
-        scoreGained: scoreGained,
+        matchedPositions:
+            matchedPositions,
+        scoreGained:
+            scoreGained,
       );
     }
 
     /*
-     * Special + normal gem
+     * SPECIAL + NORMAL GEM
      */
     final specialGem =
         firstGem.isSpecial
@@ -359,14 +402,18 @@ class GameEngine {
       targetType: targetGem.type,
     );
 
-    matchedPositions.addAll(positions);
+    matchedPositions.addAll(
+      positions,
+    );
 
     scoreGained +=
         _clearPositions(positions);
 
     return _finishSpecialResolution(
-      matchedPositions: matchedPositions,
-      scoreGained: scoreGained,
+      matchedPositions:
+          matchedPositions,
+      scoreGained:
+          scoreGained,
     );
   }
 
@@ -420,18 +467,38 @@ class GameEngine {
       );
 
       if (specialCreation != null) {
-        _createSpecialGem(
-          position: specialCreation.position,
-          type: specialCreation.type,
+        /*
+         * The special gem survives the match.
+         *
+         * If it is sitting on Ice, one Ice layer
+         * is damaged while the special gem remains.
+         */
+        _damageIceAtPosition(
+          specialCreation.position,
         );
 
-        for (final position in matchedPositions) {
+        _createSpecialGem(
+          position:
+              specialCreation.position,
+          type:
+              specialCreation.type,
+        );
+
+        for (final position
+            in matchedPositions) {
           if (position !=
               specialCreation.position) {
-            _removeGemIfAvailable(position);
+            _removeGemIfAvailable(
+              position,
+            );
           }
         }
       } else {
+        /*
+         * GameBoard handles:
+         * - removing the matched gem
+         * - damaging one Ice layer
+         */
         _board.clearGems(
           matchedPositions,
         );
@@ -461,7 +528,8 @@ class GameEngine {
     final specialType =
         matchResult.specialMatchType;
 
-    if (specialType == SpecialMatchType.none) {
+    if (specialType ==
+        SpecialMatchType.none) {
       return null;
     }
 
@@ -473,7 +541,8 @@ class GameEngine {
         )) {
       position = preferredPosition;
     } else {
-      position = matchResult.specialGemPosition;
+      position =
+          matchResult.specialGemPosition;
     }
 
     if (position == null) {
@@ -481,7 +550,9 @@ class GameEngine {
     }
 
     final gemSpecialType =
-        _toGemSpecialType(specialType);
+        _toGemSpecialType(
+      specialType,
+    );
 
     if (gemSpecialType ==
         GemSpecialType.normal) {
@@ -520,7 +591,8 @@ class GameEngine {
     required Gem specialGem,
     required GemType targetType,
   }) {
-    final positions = <BoardPosition>{};
+    final positions =
+        <BoardPosition>{};
 
     switch (specialGem.specialType) {
       case GemSpecialType.normal:
@@ -600,7 +672,8 @@ class GameEngine {
     required Gem colorBomb,
     required Gem special,
   }) {
-    final positions = <BoardPosition>{};
+    final positions =
+        <BoardPosition>{};
 
     final targetType = special.type;
 
@@ -645,11 +718,13 @@ class GameEngine {
     return positions;
   }
 
-  Set<BoardPosition> _rocketPlusRocketPositions(
+  Set<BoardPosition>
+      _rocketPlusRocketPositions(
     BoardPosition first,
     BoardPosition second,
   ) {
-    final positions = <BoardPosition>{};
+    final positions =
+        <BoardPosition>{};
 
     for (int column = 0;
         column < _board.columns;
@@ -690,13 +765,17 @@ class GameEngine {
     return positions;
   }
 
-  Set<BoardPosition> _rocketPlusBombPositions(
+  Set<BoardPosition>
+      _rocketPlusBombPositions(
     BoardPosition rocketPosition,
     GemSpecialType rocketType,
   ) {
-    final positions = <BoardPosition>{};
+    final positions =
+        <BoardPosition>{};
 
-    for (int offset = -1; offset <= 1; offset++) {
+    for (int offset = -1;
+        offset <= 1;
+        offset++) {
       final row =
           rocketPosition.row + offset;
 
@@ -732,34 +811,23 @@ class GameEngine {
       }
     }
 
-    if (rocketType ==
-        GemSpecialType.rocketHorizontal) {
-      positions.addAll(
-        _areaPositions(
-          center: rocketPosition,
-          radius: 1,
-        ),
-      );
-    }
-
-    if (rocketType ==
-        GemSpecialType.rocketVertical) {
-      positions.addAll(
-        _areaPositions(
-          center: rocketPosition,
-          radius: 1,
-        ),
-      );
-    }
+    positions.addAll(
+      _areaPositions(
+        center: rocketPosition,
+        radius: 1,
+      ),
+    );
 
     return positions;
   }
 
-  Set<BoardPosition> _bombPlusBombPositions(
+  Set<BoardPosition>
+      _bombPlusBombPositions(
     BoardPosition first,
     BoardPosition second,
   ) {
-    final positions = <BoardPosition>{};
+    final positions =
+        <BoardPosition>{};
 
     positions.addAll(
       _areaPositions(
@@ -782,7 +850,8 @@ class GameEngine {
     BoardPosition position,
     GemSpecialType type,
   ) {
-    final positions = <BoardPosition>{};
+    final positions =
+        <BoardPosition>{};
 
     if (type ==
         GemSpecialType.rocketHorizontal) {
@@ -819,7 +888,8 @@ class GameEngine {
     required BoardPosition center,
     required int radius,
   }) {
-    final positions = <BoardPosition>{};
+    final positions =
+        <BoardPosition>{};
 
     for (int rowOffset = -radius;
         rowOffset <= radius;
@@ -854,7 +924,8 @@ class GameEngine {
 
   Set<BoardPosition>
       _allAvailableGemPositions() {
-    final positions = <BoardPosition>{};
+    final positions =
+        <BoardPosition>{};
 
     for (int row = 0;
         row < _board.rows;
@@ -868,7 +939,9 @@ class GameEngine {
           column: column,
         );
 
-        if (_board.cellAt(position).isAvailable &&
+        if (_board
+                .cellAt(position)
+                .isAvailable &&
             _board.gemAt(position) != null) {
           positions.add(position);
         }
@@ -878,6 +951,14 @@ class GameEngine {
     return positions;
   }
 
+  /// Clears gems affected by a special effect.
+  ///
+  /// Every affected gem:
+  /// - is removed
+  /// - damages one Ice layer if present
+  ///
+  /// This keeps special effects consistent
+  /// with normal match clearing.
   int _clearPositions(
     Set<BoardPosition> positions,
   ) {
@@ -888,18 +969,16 @@ class GameEngine {
         continue;
       }
 
-      final gem =
-          _board.gemAt(position);
-
-      if (gem == null) {
-        continue;
-      }
-
       final cell =
           _board.cellAt(position);
 
-      if (!cell.isAvailable) {
+      if (!cell.isAvailable ||
+          !cell.hasGem) {
         continue;
+      }
+
+      if (cell.hasIce) {
+        _board.damageIce(position);
       }
 
       _board.removeGem(position);
@@ -914,7 +993,20 @@ class GameEngine {
     return gained;
   }
 
-  _ResolutionResult _finishSpecialResolution({
+  void _damageIceAtPosition(
+    BoardPosition position,
+  ) {
+    if (!_board.isInside(position)) {
+      return;
+    }
+
+    if (_board.hasIceAt(position)) {
+      _board.damageIce(position);
+    }
+  }
+
+  _ResolutionResult
+      _finishSpecialResolution({
     required Set<BoardPosition>
         matchedPositions,
     required int scoreGained,
@@ -986,7 +1078,8 @@ class GameEngine {
     final emptyPositions =
         _board.emptyPositions();
 
-    for (final position in emptyPositions) {
+    for (final position
+        in emptyPositions) {
       final type =
           _chooseRefillType(position);
 
@@ -1034,18 +1127,22 @@ class GameEngine {
       return false;
     }
 
-    final first = BoardPosition(
+    final first =
+        BoardPosition(
       row: position.row,
       column: position.column - 1,
     );
 
-    final second = BoardPosition(
+    final second =
+        BoardPosition(
       row: position.row,
       column: position.column - 2,
     );
 
-    return _board.gemAt(first)?.type == type &&
-        _board.gemAt(second)?.type == type;
+    return _board.gemAt(first)?.type ==
+            type &&
+        _board.gemAt(second)?.type ==
+            type;
   }
 
   bool _createsImmediateVerticalMatch(
@@ -1056,18 +1153,22 @@ class GameEngine {
       return false;
     }
 
-    final first = BoardPosition(
+    final first =
+        BoardPosition(
       row: position.row - 1,
       column: position.column,
     );
 
-    final second = BoardPosition(
+    final second =
+        BoardPosition(
       row: position.row - 2,
       column: position.column,
     );
 
-    return _board.gemAt(first)?.type == type &&
-        _board.gemAt(second)?.type == type;
+    return _board.gemAt(first)?.type ==
+            type &&
+        _board.gemAt(second)?.type ==
+            type;
   }
 
   String _createGemId(
