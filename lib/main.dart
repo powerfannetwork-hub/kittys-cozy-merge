@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 
-void main() {
+import 'core/theme/app_theme.dart';
+import 'services/game_storage_service.dart';
+
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  await GameStorageService.instance.initialize();
 
   runApp(const KittysCozyMergeApp());
 }
@@ -14,15 +19,7 @@ class KittysCozyMergeApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: "Kitty's Cozy Merge",
-      theme: ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.light,
-        scaffoldBackgroundColor: const Color(0xFFFFF8FC),
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFFFF78B7),
-          brightness: Brightness.light,
-        ),
-      ),
+      theme: AppTheme.light(),
       home: const AppPlaceholder(),
     );
   }
