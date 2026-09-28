@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../gameplay/gem_swap.dart';
 import 'board_gesture_controller.dart';
 import 'board_position.dart';
 import 'game_board.dart';
-import '../gameplay/gem_swap.dart';
 
 typedef BoardSwapCallback = void Function(
   GemSwap swap,
@@ -43,6 +43,8 @@ class _BoardInteractionLayerState
 
   BoardPosition? _selectedPosition;
 
+  Offset? _tapDownPosition;
+
   @override
   void initState() {
     super.initState();
@@ -76,6 +78,7 @@ class _BoardInteractionLayerState
       rows: widget.board.rows,
       columns: widget.board.columns,
       cellSize: widget.cellSize,
+      dragThresholdFactor: 0.20,
       onStart: _handleGestureStart,
       onUpdate: _handleGestureUpdate,
       onEnd: _handleGestureEnd,
@@ -136,6 +139,70 @@ class _BoardInteractionLayerState
     widget.onSwap?.call(swap);
   }
 
+  void _handleTapDown(
+    TapDownDetails details,
+  ) {
+    if (!widget.enabled) {
+      return;
+    }
+
+    _tapDownPosition = details.localPosition;
+  }
+
+  void _handleTap() {
+    if (!widget.enabled) {
+      return;
+    }
+
+    final localPosition = _tapDownPosition;
+
+    _tapDownPosition = null;
+
+    if (localPosition == null) {
+      return;
+    }
+
+    final tappedPosition =
+        _gestureController.positionFromOffset(
+      localPosition,
+    );
+
+    if (tappedPosition == null) {
+      _clearSelection();
+      return;
+    }
+
+    final selected = _selectedPosition;
+
+    if (selected == null) {
+      _setSelection(tappedPosition);
+      return;
+    }
+
+    if (selected == tappedPosition) {
+      _clearSelection();
+      return;
+    }
+
+    if (selected.isAdjacentTo(tappedPosition)) {
+      final swap = GemSwap(
+        from: selected,
+        to: tappedPosition,
+      );
+
+      _clearSelection();
+
+      widget.onSwap?.call(swap);
+      return;
+    }
+
+    _setSelection(tappedPosition);
+  }
+
+  void _handleTapCancel() {
+    _tapDownPosition = null;
+  }
+
   void _setSelection(
     BoardPosition? position,
   ) {
@@ -145,6 +212,14 @@ class _BoardInteractionLayerState
 
     if (!mounted) {
       return;
+    }
+
+    if (position != null) {
+      final cell = widget.board.cellAt(position);
+
+      if (!cell.isAvailable || !cell.hasGem) {
+        position = null;
+      }
     }
 
     setState(() {
@@ -179,6 +254,8 @@ class _BoardInteractionLayerState
       return;
     }
 
+    _tapDownPosition = null;
+
     _gestureController.start(
       details.localPosition,
     );
@@ -207,6 +284,7 @@ class _BoardInteractionLayerState
   }
 
   void _handlePanCancel() {
+    _tapDownPosition = null;
     _gestureController.cancel();
   }
 
@@ -220,6 +298,10 @@ class _BoardInteractionLayerState
   Widget build(BuildContext context) {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
+      dragStartBehavior: DragStartBehavior.down,
+      onTapDown: _handleTapDown,
+      onTap: _handleTap,
+      onTapCancel: _handleTapCancel,
       onPanDown: _handlePanDown,
       onPanUpdate: _handlePanUpdate,
       onPanEnd: _handlePanEnd,
