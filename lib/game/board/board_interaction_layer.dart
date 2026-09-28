@@ -43,7 +43,6 @@ class _BoardInteractionLayerState
   late BoardGestureController _gestureController;
 
   BoardPosition? _selectedPosition;
-
   Offset? _tapDownPosition;
 
   @override
@@ -204,6 +203,49 @@ class _BoardInteractionLayerState
     _tapDownPosition = null;
   }
 
+  void _handlePanStart(
+    DragStartDetails details,
+  ) {
+    if (!widget.enabled) {
+      return;
+    }
+
+    // A real drag has now won the gesture arena.
+    // Tap handling is no longer needed for this pointer.
+    _tapDownPosition = null;
+
+    _gestureController.start(
+      details.localPosition,
+    );
+  }
+
+  void _handlePanUpdate(
+    DragUpdateDetails details,
+  ) {
+    if (!widget.enabled) {
+      return;
+    }
+
+    _gestureController.update(
+      details.localPosition,
+    );
+  }
+
+  void _handlePanEnd(
+    DragEndDetails details,
+  ) {
+    if (!widget.enabled) {
+      return;
+    }
+
+    _gestureController.end();
+  }
+
+  void _handlePanCancel() {
+    _tapDownPosition = null;
+    _gestureController.cancel();
+  }
+
   void _setSelection(
     BoardPosition? position,
   ) {
@@ -248,47 +290,6 @@ class _BoardInteractionLayerState
     widget.onSelectionChanged?.call(null);
   }
 
-  void _handlePanDown(
-    DragDownDetails details,
-  ) {
-    if (!widget.enabled) {
-      return;
-    }
-
-    _tapDownPosition = null;
-
-    _gestureController.start(
-      details.localPosition,
-    );
-  }
-
-  void _handlePanUpdate(
-    DragUpdateDetails details,
-  ) {
-    if (!widget.enabled) {
-      return;
-    }
-
-    _gestureController.update(
-      details.localPosition,
-    );
-  }
-
-  void _handlePanEnd(
-    DragEndDetails details,
-  ) {
-    if (!widget.enabled) {
-      return;
-    }
-
-    _gestureController.end();
-  }
-
-  void _handlePanCancel() {
-    _tapDownPosition = null;
-    _gestureController.cancel();
-  }
-
   @override
   void dispose() {
     _gestureController.dispose();
@@ -303,7 +304,7 @@ class _BoardInteractionLayerState
       onTapDown: _handleTapDown,
       onTap: _handleTap,
       onTapCancel: _handleTapCancel,
-      onPanDown: _handlePanDown,
+      onPanStart: _handlePanStart,
       onPanUpdate: _handlePanUpdate,
       onPanEnd: _handlePanEnd,
       onPanCancel: _handlePanCancel,
