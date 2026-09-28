@@ -113,7 +113,6 @@ final tier = _tierFor(level);
 final specialType = _specialTypeFor(level);
 
 final movesRange = _movesRangeFor(
-  level,
   tier,
   specialType,
 );
@@ -267,7 +266,6 @@ return LevelSpecialType.normal;
 }
 
 static (int, int) _movesRangeFor(
-int level,
 LevelDifficultyTier tier,
 LevelSpecialType specialType,
 ) {
@@ -333,7 +331,11 @@ if (specialType == LevelSpecialType.bonus ||
 }
 
 if (specialType == LevelSpecialType.elite) {
-  minimum = math.max(10, minimum - 2);
+  minimum = math.max(
+    10,
+    minimum - 2,
+  );
+
   maximum = math.max(
     minimum,
     maximum - 2,
@@ -356,7 +358,8 @@ return minimum;
 final span = maximum - minimum;
 
 final wave =
-    ((level * 37) + (level ~/ 7)) % (span + 1);
+    ((level * 37) + (level ~/ 7)) %
+        (span + 1);
 
 return minimum + wave;
 
@@ -522,7 +525,10 @@ if (specialType == LevelSpecialType.elite ||
   goals += 1;
 }
 
-return math.min(goals, 5);
+return math.min(
+  goals,
+  5,
+);
 
 }
 
