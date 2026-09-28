@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../game/gameplay/gameplay_view_controller.dart';
+import '../../game/gameplay/level_result_view_model.dart';
 import '../../game/gameplay/level_session.dart';
 import 'gameplay_board_surface.dart';
 import 'gameplay_hud.dart';
@@ -19,6 +20,9 @@ class GameScreen extends StatefulWidget {
 
 class _GameScreenState extends State<GameScreen> {
   late GameplayViewController _controller;
+  late LevelResultViewModel _resultViewModel;
+
+  bool _resultShown = false;
 
   @override
   void initState() {
@@ -30,26 +34,61 @@ class _GameScreenState extends State<GameScreen> {
       ),
       cellSize: 1,
     );
+
+    _resultViewModel = LevelResultViewModel();
+
+    _controller.addListener(_handleGameplayChanged);
   }
 
   @override
   void dispose() {
+    _controller.removeListener(
+      _handleGameplayChanged,
+    );
+
+    _resultViewModel.dispose();
     _controller.dispose();
+
     super.dispose();
   }
 
-  Future<void> _handleMoveState() async {
-    if (!mounted) {
+  void _handleGameplayChanged() {
+    if (!mounted || _resultShown) {
       return;
     }
 
     if (_controller.isComplete) {
-      await _showCompleteDialog();
+      _resultShown = true;
+
+      _resultViewModel.calculate(
+        _controller.session,
+      );
+
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) {
+          if (mounted) {
+            _showCompleteDialog();
+          }
+        },
+      );
+
       return;
     }
 
     if (!_controller.hasMovesRemaining) {
-      await _showOutOfMovesDialog();
+      _resultShown = true;
+
+      _resultViewModel.calculate(
+        _controller.session,
+      );
+
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) {
+          if (mounted) {
+            _showOutOfMovesDialog();
+          }
+        },
+      );
     }
   }
 
@@ -57,6 +96,8 @@ class _GameScreenState extends State<GameScreen> {
     if (!mounted) {
       return;
     }
+
+    final result = _resultViewModel.requireResult();
 
     await showDialog<void>(
       context: context,
@@ -89,8 +130,30 @@ class _GameScreenState extends State<GameScreen> {
                 ),
               ),
               const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment:
+                    MainAxisAlignment.center,
+                children: List.generate(
+                  3,
+                  (index) => Padding(
+                    padding:
+                        const EdgeInsets.symmetric(
+                      horizontal: 3,
+                    ),
+                    child: Icon(
+                      index < result.stars
+                          ? Icons.star_rounded
+                          : Icons.star_border_rounded,
+                      color:
+                          const Color(0xFFFFB52E),
+                      size: 30,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
               Text(
-                'Score: ${_controller.score}',
+                'Score: ${result.score}',
                 style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w800,
@@ -98,7 +161,15 @@ class _GameScreenState extends State<GameScreen> {
               ),
               const SizedBox(height: 5),
               Text(
-                'Moves left: ${_controller.movesRemaining}',
+                'Moves left: ${result.movesRemaining}',
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Color(0xFF8F7D87),
+                ),
+              ),
+              const SizedBox(height: 5),
+              Text(
+                'Goals: ${result.completedGoals}/${result.totalGoals}',
                 style: const TextStyle(
                   fontSize: 12,
                   color: Color(0xFF8F7D87),
@@ -127,6 +198,8 @@ class _GameScreenState extends State<GameScreen> {
       return;
     }
 
+    final result = _resultViewModel.requireResult();
+
     await showDialog<void>(
       context: context,
       barrierDismissible: false,
@@ -141,8 +214,11 @@ class _GameScreenState extends State<GameScreen> {
               fontWeight: FontWeight.w900,
             ),
           ),
-          content: const Text(
-            'You ran out of moves before completing all goals.',
+          content: Text(
+            'You ran out of moves before completing '
+            'all goals.\n\n'
+            'Goals: ${result.completedGoals}/'
+            '${result.totalGoals}',
           ),
           actions: [
             TextButton(
@@ -158,6 +234,10 @@ class _GameScreenState extends State<GameScreen> {
               onPressed: () {
                 Navigator.of(dialogContext).pop();
 
+                _resultViewModel.clear();
+
+                _resultShown = false;
+
                 _controller.restart();
 
                 if (mounted) {
@@ -165,7 +245,8 @@ class _GameScreenState extends State<GameScreen> {
                 }
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFF68AA),
+                backgroundColor:
+                    const Color(0xFFFF68AA),
                 foregroundColor: Colors.white,
               ),
               child: const Text(
@@ -179,6 +260,10 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   void _restartLevel() {
+    _resultViewModel.clear();
+
+    _resultShown = false;
+
     _controller.restart();
 
     if (mounted) {
@@ -251,7 +336,8 @@ class _GameScreenState extends State<GameScreen> {
                             boxShadow: const [
                               BoxShadow(
                                 blurRadius: 24,
-                                offset: Offset(0, 12),
+                                offset:
+                                    Offset(0, 12),
                                 color:
                                     Color(0x1A000000),
                               ),
@@ -262,8 +348,10 @@ class _GameScreenState extends State<GameScreen> {
                                 BorderRadius.circular(
                               19,
                             ),
-                            child: GameplayBoardSurface(
-                              controller: _controller,
+                            child:
+                                GameplayBoardSurface(
+                              controller:
+                                  _controller,
                               cellSize: cellSize,
                             ),
                           ),
