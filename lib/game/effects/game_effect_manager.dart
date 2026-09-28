@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 
 import 'game_animation_controller.dart';
 import 'gem_effect.dart';
@@ -60,7 +60,7 @@ class GameEffectManager extends ChangeNotifier {
     _animationController.start(
       type,
       duration: duration,
-      delay: delay,
+      delay: delay ?? Duration.zero,
       intensity: intensity,
     );
 
