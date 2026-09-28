@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../../game/board/board_position.dart';
-import '../../game/gameplay/gem_swap.dart';
+import '../../game/gameplay/gameplay_view_controller.dart';
 import '../../game/gameplay/level_session.dart';
-import '../../game/gems/gem_widget.dart';
+import 'gameplay_board_surface.dart';
+import 'gameplay_hud.dart';
 
 class GameScreen extends StatefulWidget {
   const GameScreen({
@@ -18,170 +18,39 @@ class GameScreen extends StatefulWidget {
 }
 
 class _GameScreenState extends State<GameScreen> {
-  late LevelSession _session;
-
-  BoardPosition? _dragStart;
-  Offset? _lastDragPosition;
-  bool _processingMove = false;
+  late GameplayViewController _controller;
 
   @override
   void initState() {
     super.initState();
 
-    _session = LevelSession.create(
-      levelNumber: widget.levelNumber,
-    );
-  }
-
-  void _onPanStart(
-    DragStartDetails details,
-    double cellSize,
-  ) {
-    if (_processingMove ||
-        !_session.hasMovesRemaining ||
-        _session.isComplete) {
-      return;
-    }
-
-    final position = _positionFromOffset(
-      details.localPosition,
-      cellSize,
-    );
-
-    if (position == null) {
-      return;
-    }
-
-    final cell =
-        _session.board.cells[position.row][position.column];
-
-    if (!cell.isAvailable || !cell.hasGem) {
-      return;
-    }
-
-    _dragStart = position;
-    _lastDragPosition = details.localPosition;
-
-    setState(() {});
-  }
-
-  void _onPanUpdate(
-    DragUpdateDetails details,
-  ) {
-    if (_dragStart == null) {
-      return;
-    }
-
-    _lastDragPosition = details.localPosition;
-  }
-
-  Future<void> _onPanEnd(
-    DragEndDetails details,
-    double cellSize,
-  ) async {
-    final start = _dragStart;
-    final endOffset = _lastDragPosition;
-
-    _dragStart = null;
-    _lastDragPosition = null;
-
-    if (start == null ||
-        endOffset == null ||
-        _processingMove) {
-      if (mounted) {
-        setState(() {});
-      }
-      return;
-    }
-
-    final end = _positionFromOffset(
-      endOffset,
-      cellSize,
-    );
-
-    if (end == null || !start.isAdjacentTo(end)) {
-      if (mounted) {
-        setState(() {});
-      }
-      return;
-    }
-
-    final targetCell =
-        _session.board.cells[end.row][end.column];
-
-    if (!targetCell.isAvailable ||
-        !targetCell.hasGem) {
-      if (mounted) {
-        setState(() {});
-      }
-      return;
-    }
-
-    _processingMove = true;
-
-    if (mounted) {
-      setState(() {});
-    }
-
-    final result = _session.makeMove(
-      GemSwap(
-        from: start,
-        to: end,
+    _controller = GameplayViewController(
+      session: LevelSession.create(
+        levelNumber: widget.levelNumber,
       ),
+      cellSize: 1,
     );
+  }
 
-    _processingMove = false;
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
+  Future<void> _handleMoveState() async {
     if (!mounted) {
       return;
     }
 
-    setState(() {});
-
-    if (result == null) {
-      return;
-    }
-
-    if (_session.isComplete) {
+    if (_controller.isComplete) {
       await _showCompleteDialog();
       return;
     }
 
-    if (!_session.hasMovesRemaining) {
+    if (!_controller.hasMovesRemaining) {
       await _showOutOfMovesDialog();
-      return;
     }
-
-    if (mounted) {
-      setState(() {});
-    }
-  }
-
-  BoardPosition? _positionFromOffset(
-    Offset offset,
-    double cellSize,
-  ) {
-    if (cellSize <= 0) {
-      return null;
-    }
-
-    final column =
-        (offset.dx / cellSize).floor();
-
-    final row =
-        (offset.dy / cellSize).floor();
-
-    if (row < 0 ||
-        row >= _session.rows ||
-        column < 0 ||
-        column >= _session.columns) {
-      return null;
-    }
-
-    return BoardPosition(
-      row: row,
-      column: column,
-    );
   }
 
   Future<void> _showCompleteDialog() async {
@@ -192,7 +61,7 @@ class _GameScreenState extends State<GameScreen> {
     await showDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (context) {
+      builder: (dialogContext) {
         return AlertDialog(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(27),
@@ -221,7 +90,7 @@ class _GameScreenState extends State<GameScreen> {
               ),
               const SizedBox(height: 16),
               Text(
-                'Score: ${_session.score}',
+                'Score: ${_controller.score}',
                 style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w800,
@@ -229,7 +98,7 @@ class _GameScreenState extends State<GameScreen> {
               ),
               const SizedBox(height: 5),
               Text(
-                'Moves left: ${_session.movesRemaining}',
+                'Moves left: ${_controller.movesRemaining}',
                 style: const TextStyle(
                   fontSize: 12,
                   color: Color(0xFF8F7D87),
@@ -240,7 +109,7 @@ class _GameScreenState extends State<GameScreen> {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop();
+                Navigator.of(dialogContext).pop();
                 Navigator.of(context).pop();
               },
               child: const Text(
@@ -261,7 +130,7 @@ class _GameScreenState extends State<GameScreen> {
     await showDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (context) {
+      builder: (dialogContext) {
         return AlertDialog(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(27),
@@ -278,7 +147,7 @@ class _GameScreenState extends State<GameScreen> {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop();
+                Navigator.of(dialogContext).pop();
                 Navigator.of(context).pop();
               },
               child: const Text(
@@ -287,8 +156,13 @@ class _GameScreenState extends State<GameScreen> {
             ),
             ElevatedButton(
               onPressed: () {
-                Navigator.of(context).pop();
-                _restartLevel();
+                Navigator.of(dialogContext).pop();
+
+                _controller.restart();
+
+                if (mounted) {
+                  setState(() {});
+                }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFFF68AA),
@@ -305,15 +179,11 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   void _restartLevel() {
-    setState(() {
-      _session = LevelSession.create(
-        levelNumber: widget.levelNumber,
-      );
+    _controller.restart();
 
-      _dragStart = null;
-      _lastDragPosition = null;
-      _processingMove = false;
-    });
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   @override
@@ -321,600 +191,93 @@ class _GameScreenState extends State<GameScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFFFF7FB),
       body: SafeArea(
-        child: Column(
-          children: [
-            _buildHeader(),
-            _buildHud(),
-            Expanded(
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final availableWidth =
-                      constraints.maxWidth - 28;
-
-                  final availableHeight =
-                      constraints.maxHeight - 28;
-
-                  final cellSize = (availableWidth /
-                          _session.columns)
-                      .clamp(
-                        1.0,
-                        availableHeight / _session.rows,
-                      )
-                      .toDouble();
-
-                  final boardWidth =
-                      cellSize * _session.columns;
-
-                  final boardHeight =
-                      cellSize * _session.rows;
-
-                  return Center(
-                    child: _buildBoard(
-                      cellSize,
-                      boardWidth,
-                      boardHeight,
-                    ),
-                  );
-                },
-              ),
-            ),
-            _buildHint(),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        16,
-        10,
-        16,
-        8,
-      ),
-      child: Row(
-        children: [
-          _GameHeaderButton(
-            icon: Icons.arrow_back_rounded,
-            onTap: () => Navigator.of(context).pop(),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
+        child: ListenableBuilder(
+          listenable: _controller,
+          builder: (context, _) {
+            return Column(
               children: [
-                Text(
-                  'LEVEL ${_session.levelNumber}',
-                  style: const TextStyle(
-                    fontSize: 11,
-                    letterSpacing: 1.2,
-                    fontWeight: FontWeight.w900,
-                    color: Color(0xFF9C8792),
-                  ),
+                GameplayHeader(
+                  controller: _controller,
+                  onBack: () {
+                    Navigator.of(context).pop();
+                  },
                 ),
-                const Text(
-                  'Cozy Challenge',
-                  style: TextStyle(
-                    fontSize: 19,
-                    fontWeight: FontWeight.w900,
-                    color: Color(0xFF342632),
-                  ),
+                GameplayHud(
+                  controller: _controller,
                 ),
-              ],
-            ),
-          ),
-          _ScoreBadge(
-            score: _session.score,
-          ),
-        ],
-      ),
-    );
-  }
+                Expanded(
+                  child: LayoutBuilder(
+                    builder: (
+                      context,
+                      constraints,
+                    ) {
+                      final availableWidth =
+                          constraints.maxWidth - 28;
 
-  Widget _buildHud() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        16,
-        4,
-        16,
-        12,
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _HudCard(
-              icon: Icons.directions_run_rounded,
-              label: 'MOVES',
-              value: '${_session.movesRemaining}',
-              color: const Color(0xFFFF68AA),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            flex: 2,
-            child: _GoalsHud(
-              session: _session,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+                      final availableHeight =
+                          constraints.maxHeight - 28;
 
-  Widget _buildBoard(
-    double cellSize,
-    double boardWidth,
-    double boardHeight,
-  ) {
-    return Container(
-      width: boardWidth + 14,
-      height: boardHeight + 14,
-      padding: const EdgeInsets.all(7),
-      decoration: BoxDecoration(
-        color: const Color(0xFFEADCE6),
-        borderRadius: BorderRadius.circular(25),
-        boxShadow: const [
-          BoxShadow(
-            blurRadius: 24,
-            offset: Offset(0, 12),
-            color: Color(0x1A000000),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(19),
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onPanStart: (details) {
-            _onPanStart(
-              details,
-              cellSize,
-            );
-          },
-          onPanUpdate: _onPanUpdate,
-          onPanEnd: (details) {
-            _onPanEnd(
-              details,
-              cellSize,
-            );
-          },
-          child: SizedBox(
-            width: boardWidth,
-            height: boardHeight,
-            child: Column(
-              children: List.generate(
-                _session.rows,
-                (row) {
-                  return Row(
-                    children: List.generate(
-                      _session.columns,
-                      (column) {
-                        return _buildCell(
-                          row,
-                          column,
-                          cellSize,
-                        );
-                      },
-                    ),
-                  );
-                },
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+                      final cellSize =
+                          (availableWidth /
+                                  _controller.columns)
+                              .clamp(
+                                1.0,
+                                availableHeight /
+                                    _controller.rows,
+                              )
+                              .toDouble();
 
-  Widget _buildCell(
-    int row,
-    int column,
-    double cellSize,
-  ) {
-    final cell =
-        _session.board.cells[row][column];
+                      final boardWidth =
+                          cellSize *
+                              _controller.columns;
 
-    final position = BoardPosition(
-      row: row,
-      column: column,
-    );
+                      final boardHeight =
+                          cellSize *
+                              _controller.rows;
 
-    final selected = _dragStart == position;
-
-    return SizedBox(
-      width: cellSize,
-      height: cellSize,
-      child: Padding(
-        padding: EdgeInsets.all(
-          cellSize * 0.035,
-        ),
-        child: Container(
-          decoration: BoxDecoration(
-            color: cell.hasHardObstacle
-                ? const Color(0xFFD8CDD4)
-                : const Color(0xFFF7EDF3),
-            borderRadius: BorderRadius.circular(
-              cellSize * 0.18,
-            ),
-            border: selected
-                ? Border.all(
-                    color: const Color(0xFFFF68AA),
-                    width: 2.5,
-                  )
-                : null,
-          ),
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              if (cell.hasIce)
-                Positioned.fill(
-                  child: Container(
-                    margin: EdgeInsets.all(
-                      cellSize * 0.06,
-                    ),
-                    decoration: BoxDecoration(
-                      borderRadius:
-                          BorderRadius.circular(
-                        cellSize * 0.15,
-                      ),
-                      border: Border.all(
-                        color: const Color(0xFF9EDFFF),
-                        width: 2,
-                      ),
-                      color:
-                          const Color(0x558EE6FF),
-                    ),
-                    child: Icon(
-                      Icons.ac_unit_rounded,
-                      size: cellSize * 0.35,
-                      color:
-                          const Color(0xAAFFFFFF),
-                    ),
-                  ),
-                ),
-              if (cell.hasBlock)
-                Container(
-                  width: cellSize * 0.68,
-                  height: cellSize * 0.68,
-                  decoration: BoxDecoration(
-                    borderRadius:
-                        BorderRadius.circular(
-                      cellSize * 0.16,
-                    ),
-                    gradient:
-                        const LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        Color(0xFFE6DADF),
-                        Color(0xFFB8AAB2),
-                      ],
-                    ),
-                  ),
-                  child: Icon(
-                    Icons.grid_4x4_rounded,
-                    size: cellSize * 0.34,
-                    color: const Color(0xFF8C7C85),
-                  ),
-                ),
-              if (cell.hasLockedTile)
-                Container(
-                  width: cellSize * 0.68,
-                  height: cellSize * 0.68,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFC8BBC3),
-                    borderRadius:
-                        BorderRadius.circular(
-                      cellSize * 0.17,
-                    ),
-                  ),
-                  child: Icon(
-                    Icons.lock_rounded,
-                    size: cellSize * 0.33,
-                    color: Colors.white,
-                  ),
-                ),
-              if (cell.gem != null)
-                GemWidget(
-                  gem: cell.gem!,
-                  size: cellSize * 0.82,
-                  selected: selected,
-                  enabled: !_processingMove,
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHint() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        18,
-        5,
-        18,
-        16,
-      ),
-      child: Row(
-        mainAxisAlignment:
-            MainAxisAlignment.center,
-        children: [
-          const Icon(
-            Icons.swipe_rounded,
-            size: 19,
-            color: Color(0xFFB18E9E),
-          ),
-          const SizedBox(width: 7),
-          Text(
-            _processingMove
-                ? 'Matching...'
-                : 'Hold a gem, drag to a neighbor, release',
-            style: const TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF9B8792),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _GoalsHud extends StatelessWidget {
-  const _GoalsHud({
-    required this.session,
-  });
-
-  final LevelSession session;
-
-  @override
-  Widget build(BuildContext context) {
-    final goals = session.goals;
-
-    return Container(
-      height: 67,
-      padding: const EdgeInsets.symmetric(
-        horizontal: 11,
-        vertical: 9,
-      ),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: const [
-          BoxShadow(
-            blurRadius: 15,
-            offset: Offset(0, 6),
-            color: Color(0x10000000),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          const Icon(
-            Icons.flag_rounded,
-            color: Color(0xFFF0B23E),
-            size: 21,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Row(
-              children: List.generate(
-                goals.length,
-                (index) {
-                  final goal = goals[index];
-
-                  return Expanded(
-                    child: Padding(
-                      padding: EdgeInsets.only(
-                        right:
-                            index == goals.length - 1
-                                ? 0
-                                : 6,
-                      ),
-                      child: Column(
-                        mainAxisAlignment:
-                            MainAxisAlignment.center,
-                        crossAxisAlignment:
-                            CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            goal.title,
-                            maxLines: 1,
-                            overflow:
-                                TextOverflow.ellipsis,
-                            style:
-                                const TextStyle(
-                              fontSize: 8,
-                              fontWeight:
-                                  FontWeight.w800,
-                              color:
-                                  Color(0xFF927E89),
-                            ),
-                          ),
-                          const SizedBox(height: 3),
-                          LinearProgressIndicator(
-                            value: goal.progress,
-                            minHeight: 5,
+                      return Center(
+                        child: Container(
+                          width: boardWidth + 14,
+                          height: boardHeight + 14,
+                          padding:
+                              const EdgeInsets.all(7),
+                          decoration: BoxDecoration(
+                            color:
+                                const Color(0xFFEADCE6),
                             borderRadius:
                                 BorderRadius.circular(
-                              10,
+                              25,
                             ),
-                            backgroundColor:
-                                const Color(
-                              0xFFF0E9ED,
+                            boxShadow: const [
+                              BoxShadow(
+                                blurRadius: 24,
+                                offset: Offset(0, 12),
+                                color:
+                                    Color(0x1A000000),
+                              ),
+                            ],
+                          ),
+                          child: ClipRRect(
+                            borderRadius:
+                                BorderRadius.circular(
+                              19,
                             ),
-                            valueColor:
-                                const AlwaysStoppedAnimation<
-                                    Color>(
-                              Color(0xFFFF68AA),
+                            child: GameplayBoardSurface(
+                              controller: _controller,
+                              cellSize: cellSize,
                             ),
                           ),
-                          const SizedBox(height: 2),
-                          Text(
-                            '${goal.current}/${goal.target}',
-                            style:
-                                const TextStyle(
-                              fontSize: 8,
-                              fontWeight:
-                                  FontWeight.w900,
-                              color:
-                                  Color(0xFF4C3945),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _HudCard extends StatelessWidget {
-  const _HudCard({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.color,
-  });
-
-  final IconData icon;
-  final String label;
-  final String value;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 67,
-      padding: const EdgeInsets.symmetric(
-        horizontal: 12,
-        vertical: 9,
-      ),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: const [
-          BoxShadow(
-            blurRadius: 15,
-            offset: Offset(0, 6),
-            color: Color(0x10000000),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisAlignment:
-            MainAxisAlignment.center,
-        children: [
-          Icon(
-            icon,
-            color: color,
-            size: 21,
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 7,
-              fontWeight: FontWeight.w800,
-              color: Color(0xFFA18D98),
-            ),
-          ),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w900,
-              color: Color(0xFF342632),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ScoreBadge extends StatelessWidget {
-  const _ScoreBadge({
-    required this.score,
-  });
-
-  final int score;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 13,
-        vertical: 9,
-      ),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
-          BoxShadow(
-            blurRadius: 13,
-            offset: Offset(0, 5),
-            color: Color(0x10000000),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          const Icon(
-            Icons.star_rounded,
-            color: Color(0xFFF1B43B),
-            size: 19,
-          ),
-          const SizedBox(width: 5),
-          Text(
-            '$score',
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w900,
-              color: Color(0xFF342632),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _GameHeaderButton extends StatelessWidget {
-  const _GameHeaderButton({
-    required this.icon,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: SizedBox(
-          width: 44,
-          height: 44,
-          child: Icon(
-            icon,
-            color: Color(0xFF705C69),
-            size: 22,
-          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                GameplayHint(
+                  controller: _controller,
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
