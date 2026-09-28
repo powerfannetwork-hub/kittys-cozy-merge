@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../game/gameplay/level_difficulty_system.dart';
 import '../models/gem_type.dart';
 import '../models/level_config.dart';
 import '../models/level_goal.dart';
@@ -9,6 +10,8 @@ class LevelRepository {
 
   static final LevelRepository instance =
       LevelRepository._();
+
+  static const int _firstGeneratedLevel = 11;
 
   static const List<LevelConfig> _levels =
       <LevelConfig>[
@@ -218,13 +221,31 @@ class LevelRepository {
     ),
   ];
 
+  late final List<LevelConfig> _generatedLevels =
+      List<LevelConfig>.generate(
+    LevelDifficultySystem.maximumLevel -
+        _firstGeneratedLevel +
+        1,
+    (index) {
+      final levelNumber =
+          _firstGeneratedLevel + index;
+
+      return _generateLevel(levelNumber);
+    },
+    growable: false,
+  );
+
   List<LevelConfig> get levels {
     return List<LevelConfig>.unmodifiable(
-      _levels,
+      <LevelConfig>[
+        ..._levels,
+        ..._generatedLevels,
+      ],
     );
   }
 
-  int get levelCount => _levels.length;
+  int get levelCount =>
+      LevelDifficultySystem.maximumLevel;
 
   LevelConfig getLevel(int levelNumber) {
     if (levelNumber <= 0) {
@@ -233,29 +254,39 @@ class LevelRepository {
       );
     }
 
-    for (final level in _levels) {
-      if (level.levelNumber == levelNumber) {
-        return level.resetGoalProgress();
-      }
+    if (levelNumber <= _levels.length) {
+      return _levels[levelNumber - 1]
+          .resetGoalProgress();
     }
 
-    throw RangeError(
-      'Level $levelNumber does not exist.',
-    );
+    if (levelNumber >
+        LevelDifficultySystem.maximumLevel) {
+      throw RangeError(
+        'Level $levelNumber does not exist. '
+        'Maximum level is '
+        '${LevelDifficultySystem.maximumLevel}.',
+      );
+    }
+
+    return _generatedLevels[levelNumber -
+            _firstGeneratedLevel]
+        .resetGoalProgress();
   }
 
   bool hasLevel(int levelNumber) {
-    if (levelNumber <= 0) {
-      return false;
-    }
-
-    return _levels.any(
-      (level) => level.levelNumber == levelNumber,
-    );
+    return levelNumber >=
+            LevelDifficultySystem.minimumLevel &&
+        levelNumber <=
+            LevelDifficultySystem.maximumLevel;
   }
 
   bool hasNextLevel(int levelNumber) {
-    return hasLevel(levelNumber + 1);
+    if (!hasLevel(levelNumber)) {
+      return false;
+    }
+
+    return levelNumber <
+        LevelDifficultySystem.maximumLevel;
   }
 
   LevelConfig? tryGetLevel(int levelNumber) {
@@ -267,11 +298,267 @@ class LevelRepository {
   }
 
   LevelConfig? getNextLevel(int levelNumber) {
-    return tryGetLevel(levelNumber + 1);
+    if (!hasNextLevel(levelNumber)) {
+      return null;
+    }
+
+    return getLevel(levelNumber + 1);
   }
 
   LevelConfig get firstLevel {
-    return getLevel(1);
+    return getLevel(
+      LevelDifficultySystem.minimumLevel,
+    );
+  }
+
+  LevelConfig _generateLevel(int levelNumber) {
+    final profile =
+        LevelDifficultySystem.profileFor(
+      levelNumber,
+    );
+
+    final goals =
+        _generateGoals(
+      levelNumber,
+      profile,
+    );
+
+    return LevelConfig(
+      levelNumber: levelNumber,
+      rows: 8,
+      columns: 8,
+      moves: profile.moves,
+      goals: List<LevelGoal>.unmodifiable(
+        goals,
+      ),
+    );
+  }
+
+  List<LevelGoal> _generateGoals(
+    int levelNumber,
+    LevelDifficultyProfile profile,
+  ) {
+    final goals = <LevelGoal>[];
+
+    final primaryGem =
+        _gemTypeForLevel(levelNumber);
+
+    final secondaryGem =
+        _secondaryGemTypeForLevel(
+      levelNumber,
+      primaryGem,
+    );
+
+    final primaryTarget =
+        _primaryGemTarget(
+      levelNumber,
+      profile,
+    );
+
+    final secondaryTarget =
+        _secondaryGemTarget(
+      levelNumber,
+      profile,
+    );
+
+    goals.add(
+      LevelGoal(
+        type: LevelGoalType.collectGem,
+        target: primaryTarget,
+        gemType: primaryGem,
+      ),
+    );
+
+    if (profile.maxGoals >= 3) {
+      goals.add(
+        LevelGoal(
+          type: LevelGoalType.collectGem,
+          target: secondaryTarget,
+          gemType: secondaryGem,
+        ),
+      );
+    }
+
+    if (profile.maxGoals >= 4) {
+      goals.add(
+        LevelGoal(
+          type: LevelGoalType.reachScore,
+          target: _scoreTarget(
+            levelNumber,
+            profile,
+          ),
+        ),
+      );
+    }
+
+    if (profile.maxGoals >= 5) {
+      goals.add(
+        LevelGoal(
+          type: LevelGoalType.collectGem,
+          target: _bonusGemTarget(
+            levelNumber,
+            profile,
+          ),
+          gemType:
+              _bonusGemTypeForLevel(
+            levelNumber,
+            primaryGem,
+            secondaryGem,
+          ),
+        ),
+      );
+    }
+
+    if (goals.length >
+        profile.maxGoals) {
+      return goals.sublist(
+        0,
+        profile.maxGoals,
+      );
+    }
+
+    return goals;
+  }
+
+  GemType _gemTypeForLevel(
+    int levelNumber,
+  ) {
+    const types = <GemType>[
+      GemType.pink,
+      GemType.blue,
+      GemType.purple,
+      GemType.green,
+      GemType.yellow,
+      GemType.orange,
+    ];
+
+    return types[
+      (levelNumber - 1) % types.length
+    ];
+  }
+
+  GemType _secondaryGemTypeForLevel(
+    int levelNumber,
+    GemType primary,
+  ) {
+    const types = <GemType>[
+      GemType.pink,
+      GemType.blue,
+      GemType.purple,
+      GemType.green,
+      GemType.yellow,
+      GemType.orange,
+    ];
+
+    final primaryIndex =
+        types.indexOf(primary);
+
+    return types[
+      (primaryIndex +
+              2 +
+              (levelNumber ~/ 100)) %
+          types.length
+    ];
+  }
+
+  GemType _bonusGemTypeForLevel(
+    int levelNumber,
+    GemType primary,
+    GemType secondary,
+  ) {
+    const types = <GemType>[
+      GemType.pink,
+      GemType.blue,
+      GemType.purple,
+      GemType.green,
+      GemType.yellow,
+      GemType.orange,
+    ];
+
+    for (int offset = 1;
+        offset <= types.length;
+        offset++) {
+      final candidate =
+          types[
+            (levelNumber + offset) %
+                types.length
+          ];
+
+      if (candidate != primary &&
+          candidate != secondary) {
+        return candidate;
+      }
+    }
+
+    return GemType.orange;
+  }
+
+  int _primaryGemTarget(
+    int levelNumber,
+    LevelDifficultyProfile profile,
+  ) {
+    final base =
+        18 + (levelNumber ~/ 100);
+
+    final difficultyBonus =
+        profile.tier.index * 2;
+
+    final specialBonus =
+        profile.isSpecialLevel ? 4 : 0;
+
+    return base +
+        difficultyBonus +
+        specialBonus;
+  }
+
+  int _secondaryGemTarget(
+    int levelNumber,
+    LevelDifficultyProfile profile,
+  ) {
+    final base =
+        8 + (levelNumber ~/ 250);
+
+    final difficultyBonus =
+        profile.tier.index;
+
+    final specialBonus =
+        profile.isSpecialLevel ? 2 : 0;
+
+    return base +
+        difficultyBonus +
+        specialBonus;
+  }
+
+  int _bonusGemTarget(
+    int levelNumber,
+    LevelDifficultyProfile profile,
+  ) {
+    final base =
+        6 + (levelNumber ~/ 500);
+
+    final difficultyBonus =
+        profile.tier.index;
+
+    return base + difficultyBonus;
+  }
+
+  int _scoreTarget(
+    int levelNumber,
+    LevelDifficultyProfile profile,
+  ) {
+    final base =
+        1200 + (levelNumber * 90);
+
+    final difficultyMultiplier =
+        1 + (profile.tier.index * 0.08);
+
+    final specialBonus =
+        profile.isSpecialLevel
+            ? 500
+            : 0;
+
+    return (base * difficultyMultiplier).round() +
+        specialBonus;
   }
 
   @visibleForTesting
