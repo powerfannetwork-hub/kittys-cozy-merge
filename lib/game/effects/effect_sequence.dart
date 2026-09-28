@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 
 import 'game_animation_controller.dart';
 import 'gem_effect.dart';
@@ -208,7 +208,10 @@ class EffectSequenceStep {
         other.delay == delay &&
         other.intensity == intensity &&
         other.position == position &&
-        listEquals(other.positions, positions) &&
+        listEquals(
+          other.positions,
+          positions,
+        ) &&
         other.color == color &&
         other.moveEffect == moveEffect &&
         other.gemEffect == gemEffect;
