@@ -47,8 +47,8 @@ BoardPosition? _selectedPosition;
 Offset? _pointerDownOffset;
 BoardPosition? _pointerDownPosition;
 
-BoardPosition? _dragTarget;
-bool _isDragging = false;
+bool _dragging = false;
+bool _swapSent = false;
 
 @override
 void initState() {
@@ -70,13 +70,13 @@ final dimensionsChanged =
 if (dimensionsChanged) {
   _gestureController.dispose();
   _createGestureController();
-  _resetPointerState();
+  _resetPointer();
 }
 
 if (!widget.enabled) {
-  _clearSelection();
   _gestureController.reset();
-  _resetPointerState();
+  _clearSelection();
+  _resetPointer();
 }
 
 }
@@ -86,7 +86,7 @@ _gestureController = BoardGestureController(
 rows: widget.board.rows,
 columns: widget.board.columns,
 cellSize: widget.cellSize,
-dragThresholdFactor: 0.16,
+dragThresholdFactor: 0.12,
 onStart: _handleGestureStart,
 onUpdate: _handleGestureUpdate,
 onEnd: _handleGestureEnd,
@@ -120,7 +120,6 @@ BoardPosition? start,
 BoardPosition? end,
 ) {
 if (!widget.enabled) {
-_clearSelection();
 return;
 }
 
@@ -138,6 +137,12 @@ if (!start.isAdjacentTo(end)) {
   _clearSelection();
   return;
 }
+
+if (_swapSent) {
+  return;
+}
+
+_swapSent = true;
 
 final swap = GemSwap(
   from: start,
@@ -157,7 +162,7 @@ if (!widget.enabled) {
 return;
 }
 
-_resetPointerState();
+_resetPointer();
 
 final position =
     _gestureController.positionFromOffset(
@@ -188,28 +193,33 @@ if (!widget.enabled) {
 return;
 }
 
+if (_swapSent) {
+  return;
+}
+
 final startOffset = _pointerDownOffset;
 final startPosition = _pointerDownPosition;
 
-if (startOffset == null || startPosition == null) {
+if (startOffset == null ||
+    startPosition == null) {
   return;
 }
 
 final delta =
     event.localPosition - startOffset;
 
-final dragThreshold =
-    widget.cellSize * 0.12;
+final threshold =
+    widget.cellSize * 0.10;
 
-if (!_isDragging &&
-    delta.distance < dragThreshold) {
+if (!_dragging &&
+    delta.distance < threshold) {
   return;
 }
 
-_isDragging = true;
+_dragging = true;
 
 final target =
-    _targetFromDelta(
+    _getDragTarget(
   startPosition,
   delta,
 );
@@ -218,21 +228,26 @@ if (target == null) {
   return;
 }
 
-if (!target.isAdjacentTo(startPosition)) {
+if (!startPosition.isAdjacentTo(target)) {
   return;
 }
 
-final targetCell =
-    widget.board.cellAt(target);
-
-if (!targetCell.isAvailable ||
-    !targetCell.hasGem) {
+if (!_isValidGemPosition(target)) {
   return;
 }
-
-_dragTarget = target;
 
 _setSelection(target);
+
+_swapSent = true;
+
+final swap = GemSwap(
+  from: startPosition,
+  to: target,
+);
+
+_clearSelection();
+
+widget.onSwap?.call(swap);
 
 }
 
@@ -240,41 +255,30 @@ void _handlePointerUp(
 PointerUpEvent event,
 ) {
 if (!widget.enabled) {
-_resetPointerState();
+_resetPointer();
 return;
 }
 
 final start = _pointerDownPosition;
-final dragTarget = _dragTarget;
-final wasDragging = _isDragging;
 
 if (start == null) {
-  _resetPointerState();
+  _resetPointer();
   return;
 }
 
-if (wasDragging) {
-  if (dragTarget != null &&
-      start.isAdjacentTo(dragTarget)) {
-    final swap = GemSwap(
-      from: start,
-      to: dragTarget,
-    );
-
-    _clearSelection();
-    _resetPointerState();
-
-    widget.onSwap?.call(swap);
-    return;
-  }
-
-  _resetPointerState();
+if (_swapSent) {
+  _resetPointer();
   return;
 }
 
-_handleTapSelection(start);
+if (_dragging) {
+  _resetPointer();
+  return;
+}
 
-_resetPointerState();
+_handleTap(start);
+
+_resetPointer();
 
 }
 
@@ -282,39 +286,39 @@ void _handlePointerCancel(
 PointerCancelEvent event,
 ) {
 _gestureController.cancel();
-_resetPointerState();
+_clearSelection();
+_resetPointer();
 }
 
-void _handleTapSelection(
-BoardPosition tappedPosition,
+void _handleTap(
+BoardPosition tapped,
 ) {
 if (!widget.enabled) {
 return;
 }
 
-final cell =
-    widget.board.cellAt(tappedPosition);
-
-if (!cell.isAvailable || !cell.hasGem) {
+if (!_isValidGemPosition(tapped)) {
   return;
 }
 
 final selected = _selectedPosition;
 
 if (selected == null) {
-  _setSelection(tappedPosition);
+  _setSelection(tapped);
   return;
 }
 
-if (selected == tappedPosition) {
+if (selected == tapped) {
   _clearSelection();
   return;
 }
 
-if (selected.isAdjacentTo(tappedPosition)) {
+if (selected.isAdjacentTo(tapped)) {
+  _swapSent = true;
+
   final swap = GemSwap(
     from: selected,
-    to: tappedPosition,
+    to: tapped,
   );
 
   _clearSelection();
@@ -323,48 +327,39 @@ if (selected.isAdjacentTo(tappedPosition)) {
   return;
 }
 
-_setSelection(tappedPosition);
+_setSelection(tapped);
 
 }
 
-BoardPosition? _targetFromDelta(
+BoardPosition? _getDragTarget(
 BoardPosition start,
 Offset delta,
 ) {
 final absDx = delta.dx.abs();
 final absDy = delta.dy.abs();
 
-if (absDx < widget.cellSize * 0.12 &&
-    absDy < widget.cellSize * 0.12) {
+if (absDx < widget.cellSize * 0.10 &&
+    absDy < widget.cellSize * 0.10) {
   return null;
 }
 
+late BoardPosition target;
+
 if (absDx >= absDy) {
-  final columnOffset =
-      delta.dx >= 0 ? 1 : -1;
-
-  final target = BoardPosition(
+  target = BoardPosition(
     row: start.row,
-    column:
-        start.column + columnOffset,
+    column: start.column +
+        (delta.dx >= 0 ? 1 : -1),
   );
-
-  if (!_isInsideBoard(target)) {
-    return null;
-  }
-
-  return target;
+} else {
+  target = BoardPosition(
+    row: start.row +
+        (delta.dy >= 0 ? 1 : -1),
+    column: start.column,
+  );
 }
 
-final rowOffset =
-    delta.dy >= 0 ? 1 : -1;
-
-final target = BoardPosition(
-  row: start.row + rowOffset,
-  column: start.column,
-);
-
-if (!_isInsideBoard(target)) {
+if (!widget.board.isInside(target)) {
   return null;
 }
 
@@ -372,10 +367,18 @@ return target;
 
 }
 
-bool _isInsideBoard(
+bool _isValidGemPosition(
 BoardPosition position,
 ) {
-return widget.board.isInside(position);
+if (!widget.board.isInside(position)) {
+return false;
+}
+
+final cell =
+    widget.board.cellAt(position);
+
+return cell.isAvailable && cell.hasGem;
+
 }
 
 void _setSelection(
@@ -385,18 +388,9 @@ if (!mounted) {
 return;
 }
 
-if (position != null) {
-  if (!widget.board.isInside(position)) {
-    position = null;
-  } else {
-    final cell =
-        widget.board.cellAt(position);
-
-    if (!cell.isAvailable ||
-        !cell.hasGem) {
-      position = null;
-    }
-  }
+if (position != null &&
+    !_isValidGemPosition(position)) {
+  position = null;
 }
 
 if (_selectedPosition == position) {
@@ -430,11 +424,11 @@ widget.onSelectionChanged?.call(null);
 
 }
 
-void _resetPointerState() {
+void _resetPointer() {
 _pointerDownOffset = null;
 _pointerDownPosition = null;
-_dragTarget = null;
-_isDragging = false;
+_dragging = false;
+_swapSent = false;
 }
 
 @override
